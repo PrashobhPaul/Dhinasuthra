@@ -16,7 +16,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -90,7 +93,14 @@ fun OnboardingFlow(onDone: () -> Unit) {
         ActivityResultContracts.RequestPermission()
     ) { finish() }
 
-    Box(Modifier.fillMaxSize().padding(horizontal = 26.dp)) {
+    // Spec §47: onboarding respects the same insets as every other screen, so the
+    // first thing a new user sees is not clipped by a cutout or a gesture bar.
+    Box(
+        Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(horizontal = 26.dp)
+    ) {
         AnimatedContent(
             targetState = step,
             transitionSpec = {

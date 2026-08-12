@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="brand_navy">#0B1120</color>
-    <color name="brand_amber">#F5B33C</color>
-
     <!--
-      Edge-to-edge is the app's real layout model (spec §21/§47): the window draws
-      behind the system bars and every screen consumes WindowInsets itself, so the
-      header can never collide with the status bar or a camera cutout. The system
-      bar colours are transparent because Compose paints the background.
+      API 28+ adds display cutouts. shortEdges lets the app use the full screen,
+      including the area beside a punch-hole or notch — which is only safe because
+      every screen pads itself with WindowInsets.safeDrawing, which includes the
+      displayCutout inset in both portrait and landscape.
     -->
     <style name="Theme.DhinaSuthra" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/brand_navy</item>
@@ -15,5 +12,6 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:colorAccent">@color/brand_amber</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 </resources>
