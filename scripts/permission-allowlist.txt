@@ -1,0 +1,16 @@
+# App-declared (each maps to a visible feature — architecture §63):
+android.permission.ACCESS_BACKGROUND_LOCATION
+android.permission.ACCESS_COARSE_LOCATION
+android.permission.ACCESS_FINE_LOCATION
+android.permission.ACTIVITY_RECOGNITION
+android.permission.POST_NOTIFICATIONS
+android.permission.RECEIVE_BOOT_COMPLETED
+# Transitive, reviewed & documented (docs/play-store.md):
+# WorkManager scheduling holds partial wake locks during job execution.
+android.permission.WAKE_LOCK
+# WorkManager/play-services read connectivity as a constraint signal.
+# Harmless here: the app has no INTERNET permission, so no data can leave.
+android.permission.ACCESS_NETWORK_STATE
+# Merged by WorkManager for expedited jobs; DhinaSuthra never starts a
+# foreground service (architecture §15) and uses no expedited work.
+android.permission.FOREGROUND_SERVICE

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- ======================================================================
+         Permission set (architecture.md §14, §63). Every permission maps to a
+         visible core feature. Audited by scripts/audit-permissions.sh in CI.
+         ====================================================================== -->
+
+    <!-- Place recognition, travel inference (coarse first; fine required for geofencing radius accuracy) -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Core product: routine understanding while the app is closed (Play declaration required — docs/play-store.md) -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <!-- Movement state: STILL / WALKING / IN_VEHICLE transitions -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <!-- Routine reminders (runtime on API 33+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Reboot recovery: re-register geofences, reschedule reminders (§31) -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- ======================================================================
+         Core build is offline-first (§8): INTERNET is explicitly stripped even
+         if a transitive dependency requests it. Ad-ID likewise (§33).
+         ====================================================================== -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
+
+    <application
+        android:name=".DhinaSuthraApp"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.DhinaSuthra">
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.DhinaSuthra">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Geofence transitions delivered by Play services via PendingIntent -->
+        <receiver
+            android:name=".sensing.geofence.GeofenceReceiver"
+            android:exported="false" />
+
+        <!-- Activity Recognition transitions delivered via PendingIntent -->
+        <receiver
+            android:name=".sensing.activity.ActivityTransitionReceiver"
+            android:exported="false" />
+
+        <!-- Reboot recovery (§31): reschedule sensing + reminders; never restore stale reminders -->
+        <receiver
+            android:name=".sensing.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Local reminder delivery (no cloud, no FCM — §9/§30) -->
+        <receiver
+            android:name=".reminders.ReminderReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".reminders.ReminderActionReceiver"
+            android:exported="false" />
+    </application>
+</manifest>

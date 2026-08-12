@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DhinaSuthra</string>
+    <string name="tagline">The thread of your day</string>
+
+    <string name="notif_channel_reminders">Routine reminders</string>
+    <string name="notif_channel_reminders_desc">Gentle reminders based on your own routine</string>
+    <string name="notif_channel_insights">Insights</string>
+    <string name="notif_channel_insights_desc">Occasional insights and place suggestions</string>
+
+    <string name="disclosure_background_location_title">Why DhinaSuthra needs background location</string>
+    <string name="disclosure_background_location_body">DhinaSuthra uses location in the background, including when the app is closed or not in use, to recognize recurring places, understand travel between places, learn your daily routine, calculate time spent in different contexts, and provide routine reminders.\n\nYour location history is processed and stored locally on your device. DhinaSuthra does not sell or share your location with advertisers, and the core app has no internet access at all.</string>
+
+    <string name="minimal_reminder">DhinaSuthra reminder</string>
+</resources>

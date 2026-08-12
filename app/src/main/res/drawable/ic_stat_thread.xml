@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#FFFFFF">
+    <!-- Thread curve with three moment-nodes: the DhinaSuthra mark reduced to a glyph -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M6,3.2 C10,5.5 4.5,9 8.5,12 C12.5,15 7,18.5 11,20.8 L10,22 C5,19 10.8,15.4 6.8,12.4 C2.8,9.4 8.4,5.6 5,3.9 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M7.4,6.6 m-1.7,0 a1.7,1.7 0 1,0 3.4,0 a1.7,1.7 0 1,0 -3.4,0" />
+    <path android:fillColor="#FFFFFF" android:pathData="M8.9,12 m-1.7,0 a1.7,1.7 0 1,0 3.4,0 a1.7,1.7 0 1,0 -3.4,0" />
+    <path android:fillColor="#FFFFFF" android:pathData="M8.1,17.4 m-1.7,0 a1.7,1.7 0 1,0 3.4,0 a1.7,1.7 0 1,0 -3.4,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16.5,10.2 m-2.4,0 a2.4,2.4 0 1,0 4.8,0 a2.4,2.4 0 1,0 -4.8,0" />
+    <path android:fillColor="#FFFFFF" android:pathData="M12.5,14.6 h8 v1.5 h-8 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M13.8,17.2 h5.4 v1.3 h-5.4 Z" />
+</vector>
