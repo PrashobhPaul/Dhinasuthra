@@ -9,7 +9,30 @@ cannot transmit your data.
 
 ---
 
-## Milestone 1 scope (this build)
+## V2 — time intelligence, routines and the Rule Book
+
+V2 rebuilds the product around one idea: **a day is 1440 minutes, and every one of
+them should be accounted for honestly.**
+
+| Layer | What's inside |
+|---|---|
+| Time model | Canonical `TimeEpisode` set per day: activity + location + confidence + status (observed / inferred / confirmed / corrected). Every day reconciles to exactly 24 hours, with unexplained time labelled rather than invented |
+| Three lenses (§6) | Activity, Location, and Activity @ Location — never mixed. "Sleep 8h" and "Home 15h" can no longer appear in the same chart |
+| Rule Book | 131 deterministic rules across 12 domains, each with an id, an IF/THEN statement, an evidence weight and the class that enforces it — browsable in the app, and asserted by unit tests |
+| Reconciliation (§9–§10) | Geofence crossings raise *candidates*; only dwell, continuity and context confirm them. Park → walk → home is one arrival, not four events |
+| Sleep (§11) | Alarm dismissal is wake *intent*. Sleep runs to a wake confirmed by movement, repeated interaction or departure — with the gap between the first stir and getting up recorded |
+| Meals (§12) | Lunch is learned from your own timing, duration, place and repetition. With no evidence the window stays unclassified — 13:00 is never assumed |
+| Work (§13) | Office presence decomposes into work / meeting / lunch / break / unclassified. Presence and activity are always reported as two different numbers |
+| Patterns (§16, §38) | Median, IQR, SD, percentiles, consistency, outlier exclusion, and a lifecycle: Learning → Emerging → Established, plus Unstable and Stale |
+| Routines (§18, §20) | Established patterns can be saved as timetables with per-entry tolerance; planned vs actual, transparent adherence, and drift proposals instead of nagging |
+| Narration (§2, §51) | Insights are ranked, hedged in proportion to confidence, and carry the measurement and rules behind them. Silence is a valid output |
+| Time Lab (§25–§27) | Range × lens × view: ribbons, a spinnable radial clock, 7×24 and calendar heatmaps, day fingerprints, histograms, box plots, scatter, similarity matrices, trends, and a gesture-driven 3D time landscape with a 2D fallback |
+| Android UI (§47) | Edge-to-edge with real `WindowInsets.safeDrawing` on every screen and `shortEdges` cutout mode — no hard-coded top padding anywhere |
+
+Everything above runs on-device from your own signals. There is still no network
+permission, no account, no model file and no cloud inference.
+
+## Milestone 1 foundations (still here)
 
 | Layer | What's inside |
 |---|---|
@@ -68,7 +91,11 @@ app/src/main/java/com/dhinasuthra/app/
   analytics/   daily rollup + summary writer
   export/      JSON/CSV export, delete-all
   simulate/    debug-only synthetic-day driver
-  ui/          Compose: theme, motion tokens, components, 6 screens, onboarding
+  intelligence/ V2 core: rule book, episode model, reconciler, interpreters,
+                pattern/statistics engines, lenses, narration, timetables
+  ui/          Compose: design tokens, safe-area foundations, visualisation
+               library (ribbon, radial, heatmaps, charts, 3D landscape),
+               Today / Timeline / Insights / Routine / Time Lab / More, onboarding
 ```
 
 ## Push to GitHub
@@ -84,7 +111,7 @@ git push -u origin main
 CI builds the APK, runs unit tests, and enforces the permission/network audits
 on every push.
 
-## Honest gaps → Milestone 2
+## Honest gaps
 
 - WFH / travel-day routine clusters (§49C day-pattern variants beyond weekday/weekend)
 - Routine change detection with "Routine Change Suspected" transition state (§49I)

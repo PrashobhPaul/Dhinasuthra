@@ -120,25 +120,73 @@ class ReminderScheduler(private val context: Context) {
         cancelAll()
         if (wholeDayDeviation) return
 
+        // RMD-07 — the learned sleep window is quiet hours; nothing is scheduled inside it.
+        val sleepPattern = patternDao.byKey(RoutineEventType.SLEEP, dayType)
+        val wakePattern = patternDao.byKey(RoutineEventType.WAKE, dayType)
+
+        var scheduled = 0
         for (type in remindable) {
+            if (scheduled >= DAILY_BUDGET) break        // RMD-10
             val rule = rules[type] ?: continue
             if (!rule.enabled) continue
-            if (type in doneToday) continue
+            if (type in doneToday) continue             // RMD-02
             if (deviations.any { it.eventType == type }) continue
             val p = patternDao.byKey(type, dayType) ?: continue
-            // Low confidence stays silent (§35) — unless the user explicitly gave a
-            // routine template (§49C.1), which is usable for reminders immediately.
+            // RMD-01 — low confidence stays silent, unless the user explicitly stated
+            // this time themselves, which is usable for prompting immediately.
             val observedEnough = p.confidence >= 0.55f && p.observationCount >= 5
             val userPriorBacked = p.priorMin != null && p.observationCount < 5
             if (!observedEnough && !userPriorBacked) continue
 
+            val history = reminderDao.recentFor(type, DISMISSAL_HISTORY)
+            // RMD-03 — respect the cooldown since this type last actually fired.
+            val lastFired = history.mapNotNull { it.firedAt }.maxOrNull()
+            if (lastFired != null && now - lastFired < rule.cooldownMin * 60_000L) continue
+            // RMD-05 — repeated dismissal is an answer; stop asking.
+            val recentFired = history.filter { it.firedAt != null }.take(DISMISSAL_STREAK)
+            if (recentFired.size >= DISMISSAL_STREAK &&
+                recentFired.all { it.response == ReminderResponse.DISMISSED }
+            ) continue
+
             val q = com.dhinasuthra.app.core.model.Quantiles(p.medianMin, p.p10, p.p25, p.p75, p.p90)
             val gentleMin = p.p90 + RoutineStats.gentleToleranceMin(q)
             val significantMin = gentleMin + RoutineStats.significantLagMin()
+            if (isQuietHour(gentleMin, type, sleepPattern, wakePattern)) continue
+
             scheduleAt(type, ReminderSeverity.GENTLE, TimeUtils.instantAt(today, gentleMin), now)
-            scheduleAt(type, ReminderSeverity.SIGNIFICANT, TimeUtils.instantAt(today, significantMin), now)
+            if (!isQuietHour(significantMin, type, sleepPattern, wakePattern)) {
+                scheduleAt(type, ReminderSeverity.SIGNIFICANT, TimeUtils.instantAt(today, significantMin), now)
+            }
+            scheduled++
         }
-        DsLog.d("reminders planned for day $today")
+        DsLog.d("reminders planned for day $today ($scheduled of $DAILY_BUDGET budget)")
+    }
+
+    /**
+     * RMD-07 — a prompt that would land inside the learned sleep window is suppressed.
+     * Sleep and wake prompts are exempt: those are the two whose whole purpose is to
+     * sit at the edges of that window.
+     */
+    private fun isQuietHour(
+        minuteOfDay: Int,
+        type: RoutineEventType,
+        sleep: com.dhinasuthra.app.core.database.RoutinePatternEntity?,
+        wake: com.dhinasuthra.app.core.database.RoutinePatternEntity?
+    ): Boolean {
+        if (type == RoutineEventType.SLEEP || type == RoutineEventType.WAKE) return false
+        val sleepStart = sleep?.let { RoutineStats.denormalize(it.medianMin) } ?: return false
+        val wakeTime = wake?.let { RoutineStats.denormalize(it.medianMin) } ?: DEFAULT_WAKE_MIN
+        val minute = ((minuteOfDay % 1440) + 1440) % 1440
+        return if (sleepStart <= wakeTime) minute in sleepStart..wakeTime
+        else minute >= sleepStart || minute <= wakeTime          // window crosses midnight
+    }
+
+    private companion object {
+        /** RMD-10 — the app spends at most this many prompts a day. */
+        const val DAILY_BUDGET = 3
+        const val DISMISSAL_HISTORY = 12
+        const val DISMISSAL_STREAK = 3
+        const val DEFAULT_WAKE_MIN = 6 * 60
     }
 
     private fun scheduleAt(type: RoutineEventType, severity: ReminderSeverity, at: Instant, now: Long) {

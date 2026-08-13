@@ -9,6 +9,9 @@ import com.dhinasuthra.app.core.Settings
 import com.dhinasuthra.app.core.database.DhinaSuthraDatabase
 import com.dhinasuthra.app.core.time.DeviceTimeProvider
 import com.dhinasuthra.app.export.DataExporter
+import com.dhinasuthra.app.intelligence.CorrectionStore
+import com.dhinasuthra.app.intelligence.TimeIntelligenceRepository
+import com.dhinasuthra.app.intelligence.TimetableStore
 import com.dhinasuthra.app.places.PlaceLearner
 import com.dhinasuthra.app.reminders.NotificationChannels
 import com.dhinasuthra.app.reminders.ReminderScheduler
@@ -53,12 +56,19 @@ class AppContainer(context: Context) {
     )
     val reminderScheduler = ReminderScheduler(context)
     val dataExporter = DataExporter(context)
+
+    // V2 intelligence layer: episodes, rules, patterns, routines (spec §34).
+    val timetableStore = TimetableStore(db.appStateDao())
+    val correctionStore = CorrectionStore(db.appStateDao())
+    val timeIntelligence = TimeIntelligenceRepository(db, timetableStore, correctionStore)
+
     val timelineEditor = TimelineEditor(db.routineEventDao()) { day ->
         // §49A.5/49A.6: edits recalculate the affected day, patterns and — via
         // pattern relearn — downstream adherence. Reminders replan for today.
         analyticsEngine.writeSummary(day)
         routineLearningEngine.relearnPatterns(com.dhinasuthra.app.core.TimeUtils.epochDay())
         analyticsEngine.writeSummary(day)
+        timeIntelligence.invalidate()
         if (day == com.dhinasuthra.app.core.TimeUtils.epochDay()) reminderScheduler.planToday()
     }
 }

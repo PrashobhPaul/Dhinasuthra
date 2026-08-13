@@ -1,6 +1,5 @@
 package com.dhinasuthra.app.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
@@ -12,61 +11,98 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-/** Brand color system — product.md §39 verbatim. */
+/**
+ * Brand surface of the design system. [DsTokens] holds the semantic palette;
+ * this object stays as the shorthand the whole app already speaks, now pointing
+ * at the V2 tokens so every screen moves together.
+ */
 object Ds {
-    val Navy = Color(0xFF0D1324)
-    val NavyRaised = Color(0xFF141C33)
-    val NavyCard = Color(0xFF18213C)
-    val Purple = Color(0xFF3B2F88)
-    val Blue = Color(0xFF2563EB)
-    val Active = Color(0xFF2FA7FF)
-    val Positive = Color(0xFF22C55E)
-    val Amber = Color(0xFFF59E0B)
+    val Navy = DsTokens.Base
+    val NavyRaised = DsTokens.Raised
+    val NavyCard = DsTokens.Elevated
+    val Purple = DsTokens.Violet
+    val Blue = DsTokens.Blue
+    val Active = DsTokens.Cyan
+    val Positive = DsTokens.Green
+    val Amber = DsTokens.Gold
     val Warm = Color(0xFFFF9E45)
-    val Cream = Color(0xFFFFF4E6)
-    val Muted = Color(0xFFA9B2C3)
-    val ThreadStart = Color(0xFF8B7CF6)
+    val Cream = DsTokens.Ink
+    val Muted = DsTokens.InkSoft
+    val ThreadStart = DsTokens.Violet
 
-    /** The Sūtra gradient — thread of the day: purple → blue → cyan → gold. */
+    /** The Sūtra gradient — thread of the day: violet → blue → cyan → green → gold. */
     val ThreadColors = listOf(ThreadStart, Blue, Active, Positive, Amber, Warm)
     val ThreadBrush = Brush.linearGradient(ThreadColors)
     val SunsetBrush = Brush.linearGradient(listOf(Amber, Warm))
-    val CardBrush = Brush.verticalGradient(listOf(NavyCard, NavyRaised))
+    val CardBrush = DsTokens.CardBrush
 }
 
 private val ColorScheme = darkColorScheme(
     primary = Ds.Amber,
-    onPrimary = Ds.Navy,
+    onPrimary = DsTokens.Void,
     secondary = Ds.Active,
-    onSecondary = Ds.Navy,
+    onSecondary = DsTokens.Void,
     tertiary = Ds.Purple,
-    background = Ds.Navy,
-    onBackground = Ds.Cream,
-    surface = Ds.NavyRaised,
-    onSurface = Ds.Cream,
-    surfaceVariant = Ds.NavyCard,
-    onSurfaceVariant = Ds.Muted,
-    outline = Ds.Muted.copy(alpha = 0.3f),
-    error = Color(0xFFEF6C6C)
+    background = DsTokens.Base,
+    onBackground = DsTokens.Ink,
+    surface = DsTokens.Raised,
+    onSurface = DsTokens.Ink,
+    surfaceVariant = DsTokens.Elevated,
+    onSurfaceVariant = DsTokens.InkSoft,
+    outline = DsTokens.HairlineStrong,
+    error = Color(0xFFFF6B81)
 )
 
+/**
+ * Typography (spec §31): a serif display voice for the product's own words, a
+ * clean sans for reading, and a wide, confident numeric voice for time — the one
+ * thing this app is actually about.
+ */
 private val DsTypography = Typography(
-    displayLarge = TextStyle(fontFamily = FontFamily.Serif, fontWeight = FontWeight.SemiBold, fontSize = 40.sp, color = Ds.Cream),
-    headlineMedium = TextStyle(fontFamily = FontFamily.Serif, fontWeight = FontWeight.SemiBold, fontSize = 26.sp, color = Ds.Cream),
-    headlineSmall = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold, fontSize = 21.sp, color = Ds.Cream),
-    titleMedium = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 16.sp, letterSpacing = 0.1.sp, color = Ds.Cream),
-    titleSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 14.sp, color = Ds.Cream),
-    bodyLarge = TextStyle(fontSize = 16.sp, color = Ds.Cream),
-    bodyMedium = TextStyle(fontSize = 14.sp, color = Ds.Cream),
-    bodySmall = TextStyle(fontSize = 12.sp, color = Ds.Muted),
-    labelLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Ds.Cream),
-    labelMedium = TextStyle(fontWeight = FontWeight.Medium, fontSize = 12.sp, letterSpacing = 0.4.sp, color = Ds.Muted),
-    labelSmall = TextStyle(fontWeight = FontWeight.Medium, fontSize = 10.sp, letterSpacing = 0.6.sp, color = Ds.Muted)
+    displayLarge = TextStyle(
+        fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Bold,
+        fontSize = 56.sp, lineHeight = 58.sp, letterSpacing = (-2).sp, color = DsTokens.Ink
+    ),
+    displayMedium = TextStyle(
+        fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Bold,
+        fontSize = 40.sp, lineHeight = 44.sp, letterSpacing = (-1.4).sp, color = DsTokens.Ink
+    ),
+    displaySmall = TextStyle(
+        fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold,
+        fontSize = 30.sp, lineHeight = 34.sp, letterSpacing = (-0.8).sp, color = DsTokens.Ink
+    ),
+    headlineMedium = TextStyle(
+        fontFamily = FontFamily.Serif, fontWeight = FontWeight.SemiBold,
+        fontSize = 25.sp, lineHeight = 30.sp, letterSpacing = (-0.2).sp, color = DsTokens.Ink
+    ),
+    headlineSmall = TextStyle(
+        fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold,
+        fontSize = 20.sp, lineHeight = 26.sp, color = DsTokens.Ink
+    ),
+    titleLarge = TextStyle(
+        fontWeight = FontWeight.SemiBold, fontSize = 18.sp, lineHeight = 24.sp, color = DsTokens.Ink
+    ),
+    titleMedium = TextStyle(
+        fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 21.sp,
+        letterSpacing = 0.1.sp, color = DsTokens.Ink
+    ),
+    titleSmall = TextStyle(
+        fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 19.sp, color = DsTokens.Ink
+    ),
+    bodyLarge = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, color = DsTokens.InkSoft),
+    bodyMedium = TextStyle(fontSize = 14.sp, lineHeight = 21.sp, color = DsTokens.InkSoft),
+    bodySmall = TextStyle(fontSize = 12.5.sp, lineHeight = 18.sp, color = DsTokens.InkMuted),
+    labelLarge = TextStyle(fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = DsTokens.Ink),
+    labelMedium = TextStyle(
+        fontWeight = FontWeight.Medium, fontSize = 12.sp, letterSpacing = 0.5.sp, color = DsTokens.InkMuted
+    ),
+    labelSmall = TextStyle(
+        fontWeight = FontWeight.Medium, fontSize = 10.5.sp, letterSpacing = 0.9.sp, color = DsTokens.InkMuted
+    )
 )
 
 @Composable
 fun DhinaSuthraTheme(content: @Composable () -> Unit) {
-    // Brand identity is intentionally dark (product.md §37); dark theme always.
-    isSystemInDarkTheme()
+    // The identity is deliberately a dark instrument panel (spec §29); no light variant.
     MaterialTheme(colorScheme = ColorScheme, typography = DsTypography, content = content)
 }

@@ -298,6 +298,10 @@ interface ReminderDao {
     @Query("SELECT * FROM reminder_instances WHERE epochDay = :day")
     suspend fun instancesForDay(day: Long): List<ReminderInstanceEntity>
 
+    /** Recent history for one event type — drives cooldown and dismissal suppression. */
+    @Query("SELECT * FROM reminder_instances WHERE eventType = :type ORDER BY scheduledFor DESC LIMIT :limit")
+    suspend fun recentFor(type: RoutineEventType, limit: Int): List<ReminderInstanceEntity>
+
     @Query("SELECT * FROM reminder_instances ORDER BY scheduledFor DESC LIMIT :limit")
     fun observeRecent(limit: Int): Flow<List<ReminderInstanceEntity>>
 
