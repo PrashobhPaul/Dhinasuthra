@@ -1,131 +1,256 @@
-# DhinaSuthra — The thread of your day
+<div align="center">
 
-A privacy-first Android app that quietly learns your daily routine — leave home,
-office, lunch, return, sleep — **entirely on your phone**, and turns it into a
-living thread: animated timeline, routine insights, adaptive gentle reminders.
+<img src="docs/assets/banner.svg" alt="DhinaSuthra — the thread of your day" width="860">
 
-**No internet permission. No account. No cloud. No ads.** The APK physically
-cannot transmit your data.
+<br><br>
+
+<a href="https://github.com/PrashobhPaul/Dhinasuthra/releases/latest/download/dhinasuthra.apk">
+  <img src="docs/assets/btn-download.svg" alt="Download the APK" height="56">
+</a>
+&nbsp;&nbsp;
+<a href="#how-it-thinks">
+  <img src="docs/assets/btn-how.svg" alt="See how it thinks" height="56">
+</a>
+
+<br><br>
+
+<img src="https://img.shields.io/badge/Android-8.0%2B-3BA9FF?style=flat-square" alt="Android 8.0+">
+<img src="https://img.shields.io/badge/internet%20permission-none-34D399?style=flat-square" alt="No internet permission">
+<img src="https://img.shields.io/badge/accounts-none-34D399?style=flat-square" alt="No account">
+<img src="https://img.shields.io/badge/rules-131-8B7CF6?style=flat-square" alt="131 rules">
+
+</div>
+
+<br>
+
+## Your day already has a shape. You've just never seen it.
+
+You know roughly when you wake. You'd guess at when you eat. You'd swear you leave
+at the same time every morning — and you'd probably be wrong by twenty minutes.
+
+**DhinaSuthra watches quietly for a week.** No logging. No tapping. No streaks to
+keep alive. Then it hands you the truth: your own 24 hours, drawn as a single
+thread you can scrub through with your thumb.
+
+<br>
+
+<div align="center">
+  <img src="docs/assets/preview.svg" alt="DhinaSuthra's visual language: a rhythm score, a day drawn as a thread with one episode inspected, and a week heatmap" width="900">
+  <br>
+  <sub><i>The visual language — a rhythm score, your day as a thread, your week at a glance.</i></sub>
+</div>
+
+<br>
+
+### 🌙 It notices things you'd never bother to write down
+
+> *"You started 18 minutes later than usual — and made most of it back before work."*
+>
+> *"Lunch began at 1:27. Three minutes off your normal."*
+>
+> *"Your sleep has drifted 34 minutes later over the last three weeks. Update your routine?"*
+
+No score out of ten. No red badge for a bad day. Every sentence is measured against
+one person only: **yesterday's you.**
+
+### 🧭 It would rather say nothing than make something up
+
+If it can't work out what you were doing between 11:40 and 12:25, it tells you it
+can't — and offers you the chance to fill it in. Every conclusion comes with a
+receipt: tap any block of your day and it shows you the **exact rules** that
+produced it, and how confident it is.
+
+Most apps guess and hope you don't check. This one shows its working.
+
+### 🔒 Your day never leaves your phone
+
+Not *"we don't sell your data"*. The app holds **no internet permission at all** —
+it physically cannot transmit anything, anywhere. No account. No sign-in. No cloud,
+no analytics, no ad ID, no model file phoning home. Export it or delete it, all of
+it, in one tap.
+
+### 🌀 And when you want to fall down a rabbit hole
+
+**Time Lab** is where it stops being polite. Spin your day around a radial clock.
+Watch a month of mornings as a heatmap. Fly around a **3D landscape of your last
+45 days**, where the ridge at 9am is your commute and the canyon on Saturday is
+your lie-in. Box plots, distributions, day-similarity matrices, percentile bands —
+all of it computed on your phone, from you.
+
+<br>
+
+<div align="center">
+
+## Get it
+
+<a href="https://github.com/PrashobhPaul/Dhinasuthra/releases/latest/download/dhinasuthra.apk">
+  <img src="docs/assets/btn-download.svg" alt="Download the APK" height="56">
+</a>
+
+<sub>Always the newest build · Android 8.0+ · no Play Store account needed</sub>
+
+</div>
+
+**Three steps:**
+
+1. **Download** the APK above on your phone.
+2. **Open it.** Android will ask whether your browser or file manager may install
+   unknown apps — say yes. It's a debug-signed build, so Play Protect may want a
+   confirmation too.
+3. **Say yes to location "all the time"** during onboarding. That one permission is
+   what lets it notice you arriving and leaving while the app is closed. Everything
+   still works if you decline; it just sees less.
+
+> **Want the full experience in 30 seconds?**
+> Go to **More → Developer · Simulator → Load 45 days**. It pushes six weeks of
+> realistic sensor signals through the *real* engine — not canned screenshots — so
+> every chart fills in immediately.
+
+<br>
 
 ---
 
-## V2 — time intelligence, routines and the Rule Book
+<a name="how-it-thinks"></a>
 
-V2 rebuilds the product around one idea: **a day is 1440 minutes, and every one of
-them should be accounted for honestly.**
+## How it thinks
+
+There's no AI model in here. No LLM, no neural net, no server doing the clever bit.
+Its intelligence is **131 written rules** — and you can read every one of them
+inside the app, under **More → Rule Book**.
+
+Each rule has an ID, a plain-English IF/THEN statement, a weight, and the name of
+the code that enforces it. Some are opinions the product refuses to compromise on:
+
+| | |
+|---|---|
+| **SLP-01** | *Alarm dismissal is intent, not wakefulness.* Dismissing an alarm never ends your sleep — movement, repeated phone use or leaving the house does. |
+| **WRK-01** | *Being at the office is not working.* Presence gets decomposed into work, meetings, lunch and breaks, and the two numbers are never shown as one. |
+| **MEA-01** | *Lunch is never a hard-coded clock time.* If nothing in your history supports it, the window stays unclassified. |
+| **LOC-05** | *Park, walk, arrive — one arrival.* Parking the car and walking to your door is a single event, not four. |
+| **TML-02** | *Unexplained time is labelled, not invented.* |
+| **NAR-01** | *Silence beats a filler insight.* |
+
+Because they're just rules, they're testable — and they are: the unit suite asserts
+the catalogue's integrity, the 24-hour invariant, wake confirmation, lunch
+inference, work decomposition and the rest on every push.
+
+<br>
+
+## The five places you'll spend your time
+
+| | |
+|---|---|
+| **Today** | How's it going, what did it notice, what's next, how close is this to your normal. |
+| **Timeline** | What actually happened — every episode with its status and evidence. Long-press to correct it, and your correction outranks the engine forever after. |
+| **Insights** | What changed and why it matters. Ranked, hedged, never padded. |
+| **Routine** | Turn a pattern you keep repeating into a timetable, then see planned against actual. When life moves, it offers to move the plan instead of nagging you. |
+| **Time Lab** | Everything. Range × lens × view, and the 3D landscape. |
+
+<br>
+
+---
+
+<details>
+<summary><b>Under the hood</b> — architecture, data model and the honest gaps</summary>
+
+<br>
+
+### One canonical time model
+
+Every day is a set of `TimeEpisode`s — activity + location + confidence + status
+(observed / inferred / confirmed / corrected) — that tile the day exactly. No
+overlaps, no holes, 1440 minutes, with unexplained stretches labelled rather than
+invented and today stopping at *now* instead of fabricating nine unknown evening
+hours.
+
+### The rule that governs every chart
+
+**Activity and location are never aggregated together.** "Sleep 8h" and "Home 15h"
+in the same pie chart double-counts the day and answers two different questions at
+once. So there are exactly three legal projections — Activity, Location, and
+Activity @ Location — and `LensProjector` is the only way to build one.
 
 | Layer | What's inside |
 |---|---|
-| Time model | Canonical `TimeEpisode` set per day: activity + location + confidence + status (observed / inferred / confirmed / corrected). Every day reconciles to exactly 24 hours, with unexplained time labelled rather than invented |
-| Three lenses (§6) | Activity, Location, and Activity @ Location — never mixed. "Sleep 8h" and "Home 15h" can no longer appear in the same chart |
-| Rule Book | 131 deterministic rules across 12 domains, each with an id, an IF/THEN statement, an evidence weight and the class that enforces it — browsable in the app, and asserted by unit tests |
-| Reconciliation (§9–§10) | Geofence crossings raise *candidates*; only dwell, continuity and context confirm them. Park → walk → home is one arrival, not four events |
-| Sleep (§11) | Alarm dismissal is wake *intent*. Sleep runs to a wake confirmed by movement, repeated interaction or departure — with the gap between the first stir and getting up recorded |
-| Meals (§12) | Lunch is learned from your own timing, duration, place and repetition. With no evidence the window stays unclassified — 13:00 is never assumed |
-| Work (§13) | Office presence decomposes into work / meeting / lunch / break / unclassified. Presence and activity are always reported as two different numbers |
-| Patterns (§16, §38) | Median, IQR, SD, percentiles, consistency, outlier exclusion, and a lifecycle: Learning → Emerging → Established, plus Unstable and Stale |
-| Routines (§18, §20) | Established patterns can be saved as timetables with per-entry tolerance; planned vs actual, transparent adherence, and drift proposals instead of nagging |
-| Narration (§2, §51) | Insights are ranked, hedged in proportion to confidence, and carry the measurement and rules behind them. Silence is a valid output |
-| Time Lab (§25–§27) | Range × lens × view: ribbons, a spinnable radial clock, 7×24 and calendar heatmaps, day fingerprints, histograms, box plots, scatter, similarity matrices, trends, and a gesture-driven 3D time landscape with a 2D fallback |
-| Android UI (§47) | Edge-to-edge with real `WindowInsets.safeDrawing` on every screen and `shortEdges` cutout mode — no hard-coded top padding anywhere |
-
-Everything above runs on-device from your own signals. There is still no network
-permission, no account, no model file and no cloud inference.
-
-## Milestone 1 foundations (still here)
-
-| Layer | What's inside |
-|---|---|
-| Sensing | Geofencing, Activity Recognition transitions, 15-min context samples (screen/charging/last-known location), boot + timezone recovery |
+| Sensing | Geofencing, Activity Recognition transitions, 15-minute context samples (screen / charging / last-known location), boot + timezone recovery |
 | Context fusion | Debounced state machine → HOME / OFFICE / TRAVEL / KNOWN_PLACE / UNKNOWN_STAY segments in Room |
-| Place intelligence (§49P) | On-device stay clustering, home/office hypothesis, discovery suggestions, save-current-location, custom names + categories (incl. religious places), confirm/correct/delete → geofences regenerate |
-| Routine learning | Per-event robust stats (median, p10–p90, IQR-driven confidence), weekday/weekend split, cross-midnight sleep normalization |
-| Routine templates (§49C–F) | "Tell DhinaSuthra your routine" — user times act as decaying Bayesian priors (5 pseudo-observations), usable immediately for Next Up + reminders, never presented as observed |
-| Manual correction (§49A) | Add moments to any past day, delete manual entries, provenance dots, automatic recalculation of summaries + patterns + reminders |
-| Reminders | AlarmManager local notifications, gentle→significant escalation, cooldowns, context-driven cancellation, snooze / "It's intentional" actions, discreet lock-screen mode |
-| Analytics | Daily rollups, routine-match scoring, weekly consistency bars, time-split donut, time-leakage deltas, honest unknown-time reporting (§49N) |
-| Experience (§3–§14) | 6-tab swipe pager with finger-tracking indicator, MotionTokens + reduced-motion support, greeting engine (name + live context + routine), animated count-ups/charts, press-tilt cards |
-| Personalization (§34–§36) | Local preferred name, context-aware greetings, dynamic Next Up |
-| Privacy controls | Pause 1h/today, master tracking switch, privacy dashboard, JSON/CSV export, full delete |
-| Dev | Debug-only 21-day simulator that drives the **real** pipeline (§58), unit tests, permission/network audit scripts, GitHub Actions CI |
+| Reconciliation | Crossings raise *candidates*; dwell, continuity and context confirm them before anything is written to history |
+| Interpreters | Sleep, meals, work decomposition, commute, gap resolution — each pure Kotlin, each returning the evidence ledger that produced it |
+| Patterns | Median, IQR, SD, percentiles, consistency, Tukey outlier exclusion, and a lifecycle: Learning → Emerging → Established, plus Unstable and Stale |
+| Routines | Timetables with per-entry tolerance derived from your own spread; transparent adherence arithmetic; drift proposals |
+| Narration | Insights ranked by significance, hedged in proportion to confidence, each carrying its measurement |
+| Place intelligence | On-device stay clustering, home/office hypotheses, discovery suggestions, custom names and categories |
+| Reminders | Local AlarmManager notifications with cooldowns, dismissal suppression, quiet hours and a daily budget. A day with zero reminders is a success |
+| Privacy controls | Pause 1h / today, master tracking switch, privacy dashboard, JSON & CSV export, full delete |
 
-## Build & install
+### Repository layout
+
+```
+app/src/main/java/com/dhinasuthra/app/
+  core/         models, Room database, time provider, utils
+  context/      context fusion state machine, sleep estimator
+  places/       place learner (clustering, hypotheses, suggestions)
+  routine/      stats, learning engine (+ priors), adherence, greetings
+  reminders/    scheduler, receivers, notification copy
+  sensing/      geofencing, activity recognition, policy engine, boot receiver
+  work/         WorkManager jobs (samples, rollups, reminder planning)
+  analytics/    daily rollup + summary writer
+  export/       JSON/CSV export, delete-all
+  simulate/     debug-only synthetic-day driver
+  intelligence/ rule book, episode model, reconciler, interpreters,
+                pattern/statistics engines, lenses, narration, timetables
+  ui/           Compose: design tokens, safe-area foundations, visualisation
+                library (ribbon, radial, heatmaps, charts, 3D landscape),
+                Today / Timeline / Insights / Routine / Time Lab / More
+```
+
+### Build it yourself
 
 Requirements: JDK 17+ (21 recommended), Android SDK 35.
 
 ```bash
-# from repo root
-gradle assembleDebug            # or ./gradlew if wrapper present
-# APK: app/build/outputs/apk/debug/app-debug.apk
+gradle assembleDebug        # or ./gradlew assembleDebug
 adb install app/build/outputs/apk/debug/app-debug.apk
 ```
 
-On the phone (no adb): copy the APK over, open it, allow "install unknown apps"
-for your file manager. It's a debug-signed build — Play Protect may ask you to
-confirm.
-
-### First run
-1. Complete onboarding — for the full experience choose **"Allow all the time"**
-   for location (background arrival/departure detection needs it).
-2. Real learning takes days. To see every dashboard immediately:
-   **More → Developer · Simulator → Load 21 days** (debug builds only) — this
-   pushes three synthetic weeks through the actual sensing→context→learning→
-   reminder pipeline, not canned UI data.
+CI runs the unit suite, builds the APK, and fails the build if `INTERNET` ever
+appears in the merged manifest or an unreviewed permission is requested. Pushes to
+`main` publish the APK to the release the download button points at.
 
 ### Battery-restricted OEMs
-Xiaomi/Oppo/Vivo/OnePlus aggressively kill background apps. If moments stop
-appearing, exempt DhinaSuthra from battery optimization. The app never uses a
-permanent foreground service or other keep-alive hacks (§19).
 
-## Repository layout
+Xiaomi / Oppo / Vivo / OnePlus kill background apps aggressively. If moments stop
+appearing, exempt DhinaSuthra from battery optimisation. The app never uses a
+permanent foreground service or other keep-alive hacks.
 
-```
-app/src/main/java/com/dhinasuthra/app/
-  core/        models, Room database, time provider, utils
-  context/     context fusion state machine, sleep estimator
-  places/      place learner (clustering, hypotheses, suggestions)
-  routine/     stats, learning engine (+ priors), adherence, greetings, timeline editor
-  reminders/   scheduler, receivers, notification copy
-  sensing/     geofencing, activity recognition, policy engine, boot receiver
-  work/        WorkManager jobs (samples, rollups, reminder planning)
-  analytics/   daily rollup + summary writer
-  export/      JSON/CSV export, delete-all
-  simulate/    debug-only synthetic-day driver
-  intelligence/ V2 core: rule book, episode model, reconciler, interpreters,
-                pattern/statistics engines, lenses, narration, timetables
-  ui/          Compose: design tokens, safe-area foundations, visualisation
-               library (ribbon, radial, heatmaps, charts, 3D landscape),
-               Today / Timeline / Insights / Routine / Time Lab / More, onboarding
-```
+### Honest gaps
 
-## Push to GitHub
+- Work-from-home and travel-day routine clusters beyond weekday/weekend
+- Place merge / split tooling
+- Bulk historical entry (single-day backdated entry works today)
+- Tolerance that adapts to how you dismiss reminders
+- String extraction for Malayalam / Hindi / Telugu / Tamil / Kannada — copy still
+  lives in Kotlin
+- Import / restore of exported data
+- Release signing: builds are currently debug-signed
 
-```bash
-cd dhinasuthra
-git init -b main
-git add .
-git commit -m "DhinaSuthra M1: on-device routine intelligence"
-git remote add origin git@github.com:<you>/dhinasuthra.git
-git push -u origin main
-```
-CI builds the APK, runs unit tests, and enforces the permission/network audits
-on every push.
+</details>
 
-## Honest gaps
+<br>
 
-- WFH / travel-day routine clusters (§49C day-pattern variants beyond weekday/weekend)
-- Routine change detection with "Routine Change Suspected" transition state (§49I)
-- Gap-fill TRAVEL inference between known places after process death (§20/§49P.22) — currently gaps stay honestly UNKNOWN
-- Place merge / split tooling (§49P.9–10)
-- Bulk historical entry UX (§49A.10) — single-day backdated entry works today
-- Adaptive tolerance learned from dismissal behaviour
-- Full string-resource extraction for Malayalam/Hindi/Telugu/Tamil/Kannada (§39) — copy currently lives in Kotlin; extraction is mechanical
-- Day-replay animation, deeper accessibility pass, OEM battery help screens
-- Import/restore of exported data
+## Privacy, in one paragraph
 
-## Privacy model
+Sensors → a database on your device → engines on your device → notifications on
+your device. Raw sensor rows are pruned after 60 days, context after 180. There is
+no code path to the network, and continuous integration fails if one ever appears.
+Full detail in [`docs/privacy.md`](docs/privacy.md).
 
-See `docs/privacy.md`. Short version: sensors → Room on device → engines on
-device → notifications on device. Raw sensor rows pruned at 60 days, context at
-180. Export and delete are always one tap away. There is no code path to the
-network, and CI fails if `INTERNET` ever appears in the merged manifest.
+<br>
+
+<div align="center">
+
+<img src="docs/assets/logo.svg" alt="" width="54">
+
+<sub>© 2026 Prashobh · see <a href="LICENSE">LICENSE</a> · built for people who are curious about their own time.</sub>
+
+</div>

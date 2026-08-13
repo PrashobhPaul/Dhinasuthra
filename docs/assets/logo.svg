@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="DhinaSuthra logo: a day drawn as a ring of coloured activity segments">
+  <defs>
+    <radialGradient id="disc" cx="50%" cy="38%" r="72%">
+      <stop offset="0%" stop-color="#16203A"/>
+      <stop offset="70%" stop-color="#0B1120"/>
+      <stop offset="100%" stop-color="#070B16"/>
+    </radialGradient>
+    <filter id="soft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+    <filter id="tight" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+  </defs>
+
+  <!-- Ground -->
+  <circle cx="128" cy="128" r="126" fill="url(#disc)"/>
+  <circle cx="128" cy="128" r="125" fill="none" stroke="#FFFFFF" stroke-opacity="0.07" stroke-width="1.5"/>
+
+  <!-- The day, segment by segment. Midnight sits at the top and the day runs clockwise;
+       the colours are the app's real activity palette. -->
+  <g transform="rotate(-90 128 128)" fill="none" stroke-width="22" stroke-linecap="butt">
+    <circle cx="128" cy="128" r="100" stroke="#FFFFFF" stroke-opacity="0.05" stroke-width="22"/>
+    <circle cx="128" cy="128" r="100" stroke="#8B7CF6" stroke-dasharray="185.5 628.3" stroke-dashoffset="0"/>
+    <circle cx="128" cy="128" r="100" stroke="#5EEAD4" stroke-dasharray="34.7 628.3" stroke-dashoffset="-188.5"/>
+    <circle cx="128" cy="128" r="100" stroke="#FBBF24" stroke-dasharray="28.4 628.3" stroke-dashoffset="-226.2"/>
+    <circle cx="128" cy="128" r="100" stroke="#F59E0B" stroke-dasharray="135.2 628.3" stroke-dashoffset="-257.6"/>
+    <circle cx="128" cy="128" r="100" stroke="#34D399" stroke-dasharray="22.1 628.3" stroke-dashoffset="-395.8"/>
+    <circle cx="128" cy="128" r="100" stroke="#F59E0B" stroke-dasharray="78.7 628.3" stroke-dashoffset="-421.0"/>
+    <circle cx="128" cy="128" r="100" stroke="#FBBF24" stroke-dasharray="28.4 628.3" stroke-dashoffset="-502.7"/>
+    <circle cx="128" cy="128" r="100" stroke="#3BA9FF" stroke-dasharray="91.3 628.3" stroke-dashoffset="-534.1"/>
+  </g>
+
+  <!-- Inner hairline -->
+  <circle cx="128" cy="128" r="72" fill="none" stroke="#FFFFFF" stroke-opacity="0.09" stroke-width="1.5"/>
+
+  <!-- The hand, resting on the present moment -->
+  <g>
+    <line x1="128" y1="128" x2="59.6" y2="200.9" stroke="#F5B33C" stroke-opacity="0.35" stroke-width="9"
+          stroke-linecap="round" filter="url(#soft)"/>
+    <line x1="128" y1="128" x2="59.6" y2="200.9" stroke="#F5B33C" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="59.6" cy="200.9" r="16" fill="#F5B33C" opacity="0.30" filter="url(#soft)"/>
+    <circle cx="59.6" cy="200.9" r="9" fill="#FFD98A" filter="url(#tight)"/>
+    <circle cx="59.6" cy="200.9" r="6.5" fill="#FFF4E6"/>
+    <circle cx="128" cy="128" r="9" fill="#0B1120" stroke="#F5B33C" stroke-width="3"/>
+  </g>
+</svg>

@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400" role="img" aria-label="DhinaSuthra — the thread of your day">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#101B33"/>
+      <stop offset="45%" stop-color="#0B1120"/>
+      <stop offset="100%" stop-color="#070B16"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="22%" cy="45%" r="46%">
+      <stop offset="0%" stop-color="#3BA9FF" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#3BA9FF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="82%" cy="72%" r="42%">
+      <stop offset="0%" stop-color="#F5B33C" stop-opacity="0.13"/>
+      <stop offset="100%" stop-color="#F5B33C" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="disc" cx="50%" cy="38%" r="72%">
+      <stop offset="0%" stop-color="#16203A"/>
+      <stop offset="100%" stop-color="#080D1A"/>
+    </radialGradient>
+    <filter id="soft" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+    <clipPath id="round"><rect x="0" y="0" width="1200" height="400" rx="30"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#round)">
+    <rect width="1200" height="400" fill="url(#bg)"/>
+    <rect width="1200" height="400" fill="url(#glow)"/>
+    <rect width="1200" height="400" fill="url(#glow2)"/>
+
+    <!-- Hour grid, very faint -->
+    <g stroke="#FFFFFF" stroke-opacity="0.05" stroke-width="1">
+      <line x1="0" y1="100" x2="1200" y2="100"/>
+      <line x1="0" y1="200" x2="1200" y2="200"/>
+      <line x1="0" y1="300" x2="1200" y2="300"/>
+    </g>
+
+    <!-- The mark -->
+    <g transform="translate(96 108) scale(0.72)">
+      <circle cx="128" cy="128" r="126" fill="url(#disc)"/>
+      <circle cx="128" cy="128" r="125" fill="none" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="1.5"/>
+      <g transform="rotate(-90 128 128)" fill="none" stroke-width="22" stroke-linecap="butt">
+        <circle cx="128" cy="128" r="100" stroke="#FFFFFF" stroke-opacity="0.05"/>
+        <circle cx="128" cy="128" r="100" stroke="#8B7CF6" stroke-dasharray="185.5 628.3" stroke-dashoffset="0"/>
+        <circle cx="128" cy="128" r="100" stroke="#5EEAD4" stroke-dasharray="34.7 628.3" stroke-dashoffset="-188.5"/>
+        <circle cx="128" cy="128" r="100" stroke="#FBBF24" stroke-dasharray="28.4 628.3" stroke-dashoffset="-226.2"/>
+        <circle cx="128" cy="128" r="100" stroke="#F59E0B" stroke-dasharray="135.2 628.3" stroke-dashoffset="-257.6"/>
+        <circle cx="128" cy="128" r="100" stroke="#34D399" stroke-dasharray="22.1 628.3" stroke-dashoffset="-395.8"/>
+        <circle cx="128" cy="128" r="100" stroke="#F59E0B" stroke-dasharray="78.7 628.3" stroke-dashoffset="-421.0"/>
+        <circle cx="128" cy="128" r="100" stroke="#FBBF24" stroke-dasharray="28.4 628.3" stroke-dashoffset="-502.7"/>
+        <circle cx="128" cy="128" r="100" stroke="#3BA9FF" stroke-dasharray="91.3 628.3" stroke-dashoffset="-534.1"/>
+      </g>
+      <circle cx="128" cy="128" r="72" fill="none" stroke="#FFFFFF" stroke-opacity="0.09" stroke-width="1.5"/>
+      <line x1="128" y1="128" x2="59.6" y2="200.9" stroke="#F5B33C" stroke-opacity="0.35" stroke-width="9"
+            stroke-linecap="round" filter="url(#soft)"/>
+      <line x1="128" y1="128" x2="59.6" y2="200.9" stroke="#F5B33C" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="59.6" cy="200.9" r="15" fill="#F5B33C" opacity="0.3" filter="url(#soft)"/>
+      <circle cx="59.6" cy="200.9" r="6.5" fill="#FFF4E6"/>
+      <circle cx="128" cy="128" r="9" fill="#0B1120" stroke="#F5B33C" stroke-width="3"/>
+    </g>
+
+    <!-- Wordmark -->
+    <text x="392" y="176" font-family="Georgia, 'Iowan Old Style', 'Times New Roman', serif"
+          font-size="82" letter-spacing="-1">
+      <tspan fill="#F3F5FB">Dhina</tspan><tspan fill="#F5B33C">Suthra</tspan>
+    </text>
+    <text x="396" y="222" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+          font-size="25" fill="#8C99B4" letter-spacing="0.6">The thread of your day</text>
+
+    <!-- A day, drawn straight -->
+    <g transform="translate(396 268)">
+      <rect x="0" y="0" width="712" height="26" rx="13" fill="#FFFFFF" fill-opacity="0.045"/>
+      <g>
+        <rect x="0"   y="2" width="212" height="22" rx="11" fill="#8B7CF6"/>
+        <rect x="214" y="2" width="42"  height="22" rx="11" fill="#5EEAD4"/>
+        <rect x="258" y="2" width="34"  height="22" rx="11" fill="#FBBF24"/>
+        <rect x="294" y="2" width="158" height="22" rx="11" fill="#F59E0B"/>
+        <rect x="454" y="2" width="28"  height="22" rx="11" fill="#34D399"/>
+        <rect x="484" y="2" width="94"  height="22" rx="11" fill="#F59E0B"/>
+        <rect x="580" y="2" width="34"  height="22" rx="11" fill="#FBBF24"/>
+        <rect x="616" y="2" width="96"  height="22" rx="11" fill="#3BA9FF"/>
+      </g>
+      <line x1="486" y1="-6" x2="486" y2="32" stroke="#F5B33C" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="486" cy="-6" r="4" fill="#F5B33C"/>
+      <g font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+         font-size="14" fill="#5C6982">
+        <text x="0" y="50">00</text>
+        <text x="172" y="50">06</text>
+        <text x="350" y="50">12</text>
+        <text x="528" y="50">18</text>
+        <text x="690" y="50">24</text>
+      </g>
+    </g>
+  </g>
+  <rect x="0.75" y="0.75" width="1198.5" height="398.5" rx="29" fill="none"
+        stroke="#FFFFFF" stroke-opacity="0.10" stroke-width="1.5"/>
+</svg>

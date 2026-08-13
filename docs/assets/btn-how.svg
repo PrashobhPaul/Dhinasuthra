@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 62" width="300" height="62" role="img" aria-label="See how it thinks">
+  <defs>
+    <linearGradient id="slate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1B2540"/>
+      <stop offset="100%" stop-color="#111A2E"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="296" height="56" rx="28" fill="url(#slate)"/>
+  <rect x="2.75" y="2.75" width="294.5" height="54.5" rx="27.25" fill="none" stroke="#FFFFFF" stroke-opacity="0.16"/>
+  <g transform="translate(48 30)">
+    <circle r="11" fill="none" stroke="#F5B33C" stroke-width="2.4"/>
+    <line x1="0" y1="-11" x2="0" y2="-6" stroke="#F5B33C" stroke-width="2.4" stroke-linecap="round"/>
+    <line x1="0" y1="0" x2="0" y2="-6" stroke="#F5B33C" stroke-width="2.4" stroke-linecap="round"/>
+    <line x1="0" y1="0" x2="6" y2="3" stroke="#F5B33C" stroke-width="2.4" stroke-linecap="round"/>
+  </g>
+  <text x="168" y="38" text-anchor="middle"
+        font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        font-size="20" font-weight="600" fill="#EDF1FA" letter-spacing="0.2">See how it thinks</text>
+</svg>
