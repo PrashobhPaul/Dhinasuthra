@@ -69,6 +69,10 @@ fun PlacesScreen(onBack: (() -> Unit)? = null) {
 
     val places by app.container.db.placeDao().observeAll().collectAsState(initial = emptyList())
 
+    // Derived once here: the lazy-list content lambda below is not a composable scope.
+    val recentDays = state.snapshot?.history?.takeLast(30).orEmpty()
+    val locationSlices = remember(recentDays) { LensProjector.locationLens(recentDays) }
+
     DsScreen(
         title = "Places",
         subtitle = "Where your time happens — and only that",
@@ -87,9 +91,9 @@ fun PlacesScreen(onBack: (() -> Unit)? = null) {
         }
     ) {
         // Time by location across the recent window.
-        state.snapshot?.let { snapshot ->
-            val days = snapshot.history.takeLast(30)
-            val slices = remember(days) { LensProjector.locationLens(days) }
+        if (recentDays.isNotEmpty()) {
+            val days = recentDays
+            val slices = locationSlices
             val total = slices.sumOf { it.minutes }.coerceAtLeast(1)
             item { SectionTitle("Last ${days.size} days") }
             item {
@@ -204,10 +208,8 @@ fun PlacesScreen(onBack: (() -> Unit)? = null) {
             Reveal(index.coerceAtMost(5)) {
                 PlaceCard(
                     place = place,
-                    minutesInWindow = state.snapshot?.let { snapshot ->
-                        LensProjector.locationLens(snapshot.history.takeLast(30))
-                            .firstOrNull { it.placeName == place.name }?.minutes
-                    },
+                    minutesInWindow = locationSlices
+                        .firstOrNull { it.placeName == place.name }?.minutes,
                     onEdit = { editing = place }
                 )
             }

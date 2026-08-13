@@ -78,6 +78,24 @@ fun RoutineScreen() {
     var editing by remember { mutableStateOf<Timetable?>(null) }
     var addingTo by remember { mutableStateOf<Timetable?>(null) }
 
+    // Derived in the composable body — the lazy-list content lambda below is not
+    // a composable scope, so remember() has to live out here.
+    val todayType = TimeUtils.dayType(snapshot?.today?.epochDay ?: TimeUtils.epochDay())
+    val suggestion = remember(snapshot, todayType) {
+        val current = snapshot ?: return@remember null
+        RoutineComposer.suggest(
+            current.patterns, todayType,
+            if (todayType == DayType.WEEKDAY) "My weekday rhythm" else "My weekend rhythm"
+        )?.takeIf { proposal -> current.timetables.none { it.id == proposal.id } }
+    }
+    val drift = remember(snapshot, todayType) {
+        val current = snapshot ?: return@remember emptyList<Pair<Timetable, RoutineComposer.DriftProposal>>()
+        current.timetables.filter { it.active }.flatMap { timetable ->
+            RoutineComposer.driftProposals(timetable, current.patterns, todayType)
+                .map { timetable to it }
+        }
+    }
+
     DsScreen(
         title = "Routine",
         subtitle = "The timetable you are choosing to keep"
@@ -120,12 +138,6 @@ fun RoutineScreen() {
         }
 
         // A routine offer, built from established patterns only.
-        val suggestion = remember(snapshot.patterns, snapshot.timetables) {
-            RoutineComposer.suggest(
-                snapshot.patterns, dayType,
-                if (dayType == DayType.WEEKDAY) "My weekday rhythm" else "My weekend rhythm"
-            )?.takeIf { proposal -> snapshot.timetables.none { it.id == proposal.id } }
-        }
         if (suggestion != null) {
             item { SectionTitle("DhinaSuthra noticed a routine") }
             item {
@@ -175,12 +187,6 @@ fun RoutineScreen() {
         }
 
         // Drift: life moved, so offer to move the plan (RTN-09).
-        val drift = remember(snapshot.timetables, snapshot.patterns) {
-            snapshot.timetables.filter { it.active }.flatMap { timetable ->
-                RoutineComposer.driftProposals(timetable, snapshot.patterns, dayType)
-                    .map { timetable to it }
-            }
-        }
         if (drift.isNotEmpty()) {
             item { SectionTitle("Your routine has drifted") }
             items(drift.size) { index ->

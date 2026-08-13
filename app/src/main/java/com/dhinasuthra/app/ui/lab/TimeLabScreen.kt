@@ -98,17 +98,26 @@ fun TimeLabScreen() {
     var focusActivity by remember { mutableStateOf(ActivityType.LUNCH) }
     var use3D by remember { mutableStateOf(true) }
 
+    // Memoised in the composable body: the lazy-list content lambda is not a
+    // composable scope, so remember() cannot live inside it.
+    val history = snapshot?.history
+    val fallbackDay = snapshot?.today
+    val days = remember(history, range, fallbackDay) {
+        val window = history.orEmpty().takeLast(range.days)
+        when {
+            window.isNotEmpty() -> window
+            fallbackDay != null -> listOf(fallbackDay)
+            else -> emptyList()
+        }
+    }
+
     DsScreen(
         title = "Time Lab",
         subtitle = "Everything, in as much detail as you want"
     ) {
-        if (snapshot == null) {
+        if (snapshot == null || days.isEmpty()) {
             item { EmptyState("Warming up", "Reconstructing your history.") }
             return@DsScreen
-        }
-
-        val days = remember(snapshot.history, range) {
-            snapshot.history.takeLast(range.days).ifEmpty { listOf(snapshot.today) }
         }
 
         item {
