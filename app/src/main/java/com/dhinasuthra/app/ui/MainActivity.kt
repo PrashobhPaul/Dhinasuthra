@@ -2,6 +2,7 @@ package com.dhinasuthra.app.ui
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.core.animateFloatAsState
@@ -30,7 +31,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Timeline
@@ -55,6 +55,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.dhinasuthra.app.DhinaSuthraApp
@@ -62,7 +64,7 @@ import com.dhinasuthra.app.core.TimeUtils
 import com.dhinasuthra.app.ui.foundation.DsSafeArea
 import com.dhinasuthra.app.ui.insights.InsightsScreen
 import com.dhinasuthra.app.ui.lab.TimeLabScreen
-import com.dhinasuthra.app.ui.more.MoreScreen
+import com.dhinasuthra.app.ui.settings.SettingsScreen
 import com.dhinasuthra.app.ui.onboarding.OnboardingFlow
 import com.dhinasuthra.app.ui.routine.RoutineScreen
 import com.dhinasuthra.app.ui.theme.DhinaSuthraTheme
@@ -75,7 +77,8 @@ import kotlin.math.absoluteValue
 /**
  * Shell and navigation (spec §48).
  *
- * Six destinations, swipeable and tappable. Edge-to-edge is enabled here and the
+ * Five destinations, swipeable and tappable. Settings lives behind the gear on
+ * Today rather than costing a tab. Edge-to-edge is enabled here and the
  * insets are consumed by the screens themselves ([DsSafeArea]) and by the tab bar
  * below — the window is never padded blindly, so a punch-hole phone, a notched
  * phone and a gesture-navigation phone each get exactly the space they need.
@@ -131,11 +134,19 @@ private fun MainScaffold() {
         Dest("Timeline", Icons.Filled.Timeline),
         Dest("Insights", Icons.Filled.AutoAwesome),
         Dest("Routine", Icons.Filled.Schedule),
-        Dest("Lab", Icons.Filled.Science),
-        Dest("More", Icons.Filled.MoreHoriz)
+        Dest("Lab", Icons.Filled.Science)
     )
     val pagerState = rememberPagerState(pageCount = { dests.size })
     val scope = rememberCoroutineScope()
+    var showSettings by remember { mutableStateOf(false) }
+
+    // Settings is a destination you visit, not a place you live — so it takes the
+    // whole screen and hands it back, instead of costing a permanent tab.
+    if (showSettings) {
+        BackHandler { showSettings = false }
+        SettingsScreen(onBack = { showSettings = false })
+        return
+    }
 
     Column(Modifier.fillMaxSize()) {
         HorizontalPager(
@@ -155,12 +166,11 @@ private fun MainScaffold() {
                 }
             ) {
                 when (page) {
-                    0 -> TodayScreen()
+                    0 -> TodayScreen(onOpenSettings = { showSettings = true })
                     1 -> TimelineScreen()
                     2 -> InsightsScreen()
                     3 -> RoutineScreen()
-                    4 -> TimeLabScreen()
-                    else -> MoreScreen()
+                    else -> TimeLabScreen()
                 }
             }
         }
@@ -249,11 +259,18 @@ private fun ThreadNavBar(
                                         .graphicsLayer { scaleX = scale; scaleY = scale }
                                 )
                                 Spacer(Modifier.height(3.dp))
+                                // One line, centred, never allowed to bleed into its
+                                // neighbour however narrow the screen gets.
                                 Text(
                                     dest.label,
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         color = if (selected) DsTokens.Ink else DsTokens.InkMuted
-                                    )
+                                    ),
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp)
                                 )
                             }
                         }

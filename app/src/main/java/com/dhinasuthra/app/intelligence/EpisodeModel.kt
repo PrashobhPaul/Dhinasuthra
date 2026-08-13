@@ -229,7 +229,7 @@ class DayReconstruction private constructor(
             confidence = 0f,
             status = EpisodeStatus.INFERRED,
             ruleIds = listOf(TimelineRules.HONEST_UNKNOWN.id),
-            evidence = listOf("${TimelineRules.HONEST_UNKNOWN.id} · no evidence covered this period, so it is reported as unclassified rather than guessed")
+            evidence = listOf("no evidence covered this period, so it is reported as unclassified rather than guessed")
         )
     }
 }

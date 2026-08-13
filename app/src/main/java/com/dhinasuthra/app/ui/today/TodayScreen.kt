@@ -23,6 +23,10 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,7 +53,6 @@ import com.dhinasuthra.app.intelligence.PatternEngine
 import com.dhinasuthra.app.intelligence.PatternIndex
 import com.dhinasuthra.app.intelligence.PatternLifecycle
 import com.dhinasuthra.app.intelligence.RhythmScorer
-import com.dhinasuthra.app.intelligence.RuleBook
 import com.dhinasuthra.app.intelligence.TimeEpisode
 import com.dhinasuthra.app.intelligence.TimetableAdherence
 import com.dhinasuthra.app.ui.foundation.CardBody
@@ -59,7 +62,6 @@ import com.dhinasuthra.app.ui.foundation.DsSafeArea
 import com.dhinasuthra.app.ui.foundation.GlassCard
 import com.dhinasuthra.app.ui.foundation.Hairline
 import com.dhinasuthra.app.ui.foundation.Reveal
-import com.dhinasuthra.app.ui.foundation.RuleIdRow
 import com.dhinasuthra.app.ui.foundation.SectionTitle
 import com.dhinasuthra.app.ui.foundation.ShimmerBox
 import com.dhinasuthra.app.ui.foundation.StatTile
@@ -84,7 +86,7 @@ import java.util.Locale
  * is a dashboard — the laboratory is two tabs away.
  */
 @Composable
-fun TodayScreen() {
+fun TodayScreen(onOpenSettings: () -> Unit = {}) {
     val context = LocalContext.current
     val vm = rememberTimeViewModel()
     val state by vm.state.collectAsState()
@@ -102,7 +104,7 @@ fun TodayScreen() {
             .fillMaxSize()
             .windowInsetsPadding(DsSafeArea.topAndSides)
     ) {
-        BrandRow()
+        BrandRow(onOpenSettings)
         LazyColumn(
             Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
@@ -160,17 +162,17 @@ fun TodayScreen() {
                 item { Reveal(5) { LearningCard(snapshot.observedDays, snapshot.patterns) } }
             }
 
-            item { Reveal(6) { IntelligenceFooter(snapshot.today) } }
+            item { Reveal(6) { IntelligenceFooter(snapshot.today, snapshot.patterns) } }
         }
     }
 }
 
 @Composable
-private fun BrandRow() {
+private fun BrandRow(onOpenSettings: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = DsTokens.ScreenPadding, vertical = DsTokens.GapM),
+            .padding(start = DsTokens.ScreenPadding, end = 8.dp, top = DsTokens.GapM, bottom = DsTokens.GapM),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -190,6 +192,14 @@ private fun BrandRow() {
                 .format(DateTimeFormatter.ofPattern("EEE d MMM")),
             style = MaterialTheme.typography.labelMedium
         )
+        IconButton(onClick = onOpenSettings, modifier = Modifier.size(40.dp)) {
+            Icon(
+                Icons.Filled.Settings,
+                contentDescription = "Settings",
+                tint = DsTokens.InkMuted,
+                modifier = Modifier.size(20.dp)
+            )
+        }
     }
 }
 
@@ -259,7 +269,6 @@ private fun HeroCard(
                     )
                     if (rhythm != null) {
                         Spacer(Modifier.height(8.dp))
-                        RuleIdRow(rhythm.ruleIds)
                     }
                 }
             }
@@ -395,14 +404,13 @@ private fun InsightCard(insight: Insight) {
             Text(insight.kind.label.uppercase(), style = MaterialTheme.typography.labelSmall)
             Text(insight.headline, style = MaterialTheme.typography.titleMedium)
             Text(insight.detail, style = MaterialTheme.typography.bodySmall)
-            RuleIdRow(insight.ruleIds)
             if (expanded && insight.evidence.isNotEmpty()) {
                 Hairline()
                 insight.evidence.forEach {
                     Text(it, style = MaterialTheme.typography.bodySmall)
                 }
                 Text(
-                    "Every sentence here is produced by the rules above — tap Rule Book in More to read them.",
+                    "Every sentence here is measured against your own history, never a general average.",
                     style = MaterialTheme.typography.labelSmall.copy(color = DsTokens.InkFaint)
                 )
             }
@@ -437,7 +445,13 @@ private fun LensCard(day: DayReconstruction, lens: Int, onLens: (Int) -> Unit) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         DonutChart(slices, Modifier.size(126.dp), ringWidth = 20.dp) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(TimeUtils.formatDurationMin(total), style = MaterialTheme.typography.titleMedium)
+                                // The figure in the middle counts only time that was
+                                // actually understood — unclassified minutes are a slice,
+                                // never part of the "accounted" total.
+                                Text(
+                                    TimeUtils.formatDurationMin(day.knownMin),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
                                 Text("accounted", style = MaterialTheme.typography.labelSmall)
                             }
                         }
@@ -533,7 +547,6 @@ private fun AdherenceCard(report: TimetableAdherence.Report) {
                 fraction = (report.adherence ?: 0) / 100f,
                 color = DsTokens.rhythmColor(report.adherence ?: 0)
             )
-            RuleIdRow(report.ruleIds)
         }
     }
 }
@@ -579,25 +592,30 @@ private fun LearningCard(observedDays: Int, patterns: PatternIndex) {
 }
 
 @Composable
-private fun IntelligenceFooter(day: DayReconstruction) {
-    val ruleCount = remember { RuleBook.count }
+private fun IntelligenceFooter(day: DayReconstruction, patterns: PatternIndex) {
+    val established = patterns.all().count {
+        !it.isPrior && it.lifecycle == PatternLifecycle.ESTABLISHED
+    }
     GlassCard(Modifier.fillMaxWidth(), interactive = false) {
         CardBody {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 StatTile(
-                    "Rules applied", "$ruleCount", Modifier.weight(1f),
-                    caption = "deterministic, on device"
-                )
-                StatTile(
-                    "Day reconstructed",
+                    "Day understood",
                     "${(day.coverageFraction * 100).toInt()}%",
                     Modifier.weight(1f),
                     accent = DsTokens.Green,
-                    caption = "${TimeUtils.formatDurationMin(day.unknownMin)} unclassified"
+                    caption = if (day.unknownMin == 0) "all of it accounted for"
+                    else "${TimeUtils.formatDurationMin(day.unknownMin)} still unclear"
+                )
+                StatTile(
+                    "Habits recognised",
+                    "$established",
+                    Modifier.weight(1f),
+                    caption = if (established == 0) "nothing settled yet" else "repeated often enough to rely on"
                 )
             }
             Text(
-                "No accounts, no servers, no model files. Everything above was derived on this phone from your own signals.",
+                "No accounts, no servers, nothing uploaded. Everything above was worked out on this phone, from your own days.",
                 style = MaterialTheme.typography.labelSmall.copy(color = DsTokens.InkFaint)
             )
         }

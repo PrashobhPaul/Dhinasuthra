@@ -649,7 +649,7 @@ object WorkInterpreter {
                 candidate.copy(
                     ruleIds = candidate.ruleIds + WorkRules.LAST_DEPARTURE_ENDS_WORK.id,
                     evidence = candidate.evidence +
-                        "${WorkRules.LAST_DEPARTURE_ENDS_WORK.id} · the working day closed at ${TimeUtils.formatMinuteOfDay(lastDeparture)}, your final departure from the office"
+                        "the working day closed at ${TimeUtils.formatMinuteOfDay(lastDeparture)}, your final departure from the office"
                 )
             } else candidate
         }

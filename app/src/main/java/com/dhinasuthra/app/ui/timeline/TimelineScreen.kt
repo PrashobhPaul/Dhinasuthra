@@ -56,7 +56,6 @@ import com.dhinasuthra.app.ui.foundation.DsSafeArea
 import com.dhinasuthra.app.ui.foundation.GlassCard
 import com.dhinasuthra.app.ui.foundation.Hairline
 import com.dhinasuthra.app.ui.foundation.Reveal
-import com.dhinasuthra.app.ui.foundation.RuleIdRow
 import com.dhinasuthra.app.ui.state.rememberTimeViewModel
 import com.dhinasuthra.app.ui.theme.DsTokens
 import com.dhinasuthra.app.ui.viz.DayRibbon
@@ -67,7 +66,7 @@ import java.time.format.DateTimeFormatter
  * Timeline = truth (spec §23, §50).
  *
  * The chronological reconstruction of a day, every episode carrying its status
- * (observed, inferred, confirmed, corrected) and the rules that produced it. Long
+ * (observed, inferred, confirmed, corrected) and the evidence behind it. Long
  * press anything to tell DhinaSuthra it was wrong — and that correction outranks
  * every inference from then on (TML-08).
  */
@@ -223,7 +222,7 @@ fun TimelineScreen() {
 
             item {
                 Text(
-                    "Long press an episode to correct it. Corrections are stored as your own rules and outrank every inference afterwards.",
+                    "Long press anything to correct it. What you tell DhinaSuthra always wins, today and every day after.",
                     style = MaterialTheme.typography.labelSmall.copy(color = DsTokens.InkFaint),
                     modifier = Modifier.padding(top = 10.dp)
                 )
@@ -301,7 +300,7 @@ private fun EpisodeRow(
                     ConfidenceTag(episode.band)
                     if (episode.evidence.isEmpty()) {
                         Text(
-                            "No rule produced this period — it is unexplained time, honestly labelled.",
+                            "Nothing explained this period, so it is left unclassified rather than guessed at.",
                             style = MaterialTheme.typography.bodySmall
                         )
                     } else {
@@ -309,7 +308,6 @@ private fun EpisodeRow(
                             Text(it, style = MaterialTheme.typography.bodySmall)
                         }
                     }
-                    RuleIdRow(episode.ruleIds, max = 6)
                     Text(
                         "Long press to correct",
                         style = MaterialTheme.typography.labelSmall.copy(color = DsTokens.Gold)
@@ -354,7 +352,7 @@ private fun CorrectionSheet(
         ) {
             Text("What were you actually doing?", style = MaterialTheme.typography.headlineSmall)
             Text(
-                "${episode.rangeLabel()} · ${episode.durationLabel()}. Your answer becomes a personal rule: DhinaSuthra will weigh it when it sees a similar window again.",
+                "${episode.rangeLabel()} · ${episode.durationLabel()}. DhinaSuthra will remember this and weigh it when it sees a similar window again.",
                 style = MaterialTheme.typography.bodySmall
             )
             SelectorGrid(
