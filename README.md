@@ -57,8 +57,8 @@ one person only: **yesterday's you.**
 
 If it can't work out what you were doing between 11:40 and 12:25, it tells you it
 can't — and offers you the chance to fill it in. Every conclusion comes with a
-receipt: tap any block of your day and it shows you the **exact rules** that
-produced it, and how confident it is.
+receipt: tap any block of your day and it tells you, in plain words, **exactly
+what led it there** and how sure it is.
 
 Most apps guess and hope you don't check. This one shows its working.
 
@@ -102,7 +102,7 @@ all of it computed on your phone, from you.
    still works if you decline; it just sees less.
 
 > **Want the full experience in 30 seconds?**
-> Go to **More → Developer · Simulator → Load 45 days**. It pushes six weeks of
+> Go to **⚙️ Settings → Developer · Simulator → Load 45 days**. It pushes six weeks of
 > realistic sensor signals through the *real* engine — not canned screenshots — so
 > every chart fills in immediately.
 
@@ -115,11 +115,12 @@ all of it computed on your phone, from you.
 ## How it thinks
 
 There's no AI model in here. No LLM, no neural net, no server doing the clever bit.
-Its intelligence is **131 written rules** — and you can read every one of them
-inside the app, under **More → Rule Book**.
+Its intelligence is **131 written rules**, each with an ID, a plain-English IF/THEN
+statement, a weight, and the name of the code that enforces it.
 
-Each rule has an ID, a plain-English IF/THEN statement, a weight, and the name of
-the code that enforces it. Some are opinions the product refuses to compromise on:
+You won't meet any of that while using the app — it shows you findings, not its
+homework. But since this is where the curious end up, here are a few of the
+opinions it refuses to compromise on:
 
 | | |
 |---|---|

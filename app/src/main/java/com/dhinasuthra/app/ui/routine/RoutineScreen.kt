@@ -39,7 +39,6 @@ import com.dhinasuthra.app.intelligence.ActivityType
 import com.dhinasuthra.app.intelligence.LocationType
 import com.dhinasuthra.app.intelligence.PatternEngine
 import com.dhinasuthra.app.intelligence.RoutineComposer
-import com.dhinasuthra.app.intelligence.RoutineRules
 import com.dhinasuthra.app.intelligence.Timetable
 import com.dhinasuthra.app.intelligence.TimetableAdherence
 import com.dhinasuthra.app.intelligence.TimetableEntry
@@ -50,7 +49,6 @@ import com.dhinasuthra.app.ui.foundation.EmptyState
 import com.dhinasuthra.app.ui.foundation.GlassCard
 import com.dhinasuthra.app.ui.foundation.Hairline
 import com.dhinasuthra.app.ui.foundation.Reveal
-import com.dhinasuthra.app.ui.foundation.RuleIdRow
 import com.dhinasuthra.app.ui.foundation.SectionTitle
 import com.dhinasuthra.app.ui.state.rememberTimeViewModel
 import com.dhinasuthra.app.ui.theme.DsTokens
@@ -170,13 +168,6 @@ fun RoutineScreen() {
                                     )
                                 }
                             }
-                            RuleIdRow(
-                                listOf(
-                                    RoutineRules.SUGGEST_NEVER_IMPOSE.id,
-                                    RoutineRules.NEEDS_ESTABLISHED_PATTERN.id,
-                                    RoutineRules.TOLERANCE_FROM_YOU.id
-                                )
-                            )
                             TextButton(onClick = { vm.saveTimetable(suggestion) }) {
                                 Text("Save this routine", color = DsTokens.Gold)
                             }
@@ -205,7 +196,6 @@ fun RoutineScreen() {
                                 " across ${proposal.observations} observations. Update the plan rather than being told you are late every day?",
                             style = MaterialTheme.typography.bodySmall
                         )
-                        RuleIdRow(listOf(RoutineRules.DRIFT_OFFERS_UPDATE.id))
                         TextButton(onClick = {
                             vm.saveTimetable(
                                 timetable.copy(
@@ -252,12 +242,6 @@ fun RoutineScreen() {
                             )
                         }) { Text("New weekend routine", color = DsTokens.Cyan) }
                     }
-                    RuleIdRow(
-                        listOf(
-                            RoutineRules.TIMETABLE_SHAPE.id,
-                            com.dhinasuthra.app.intelligence.PatternRules.PRIOR_IS_NOT_OBSERVATION.id
-                        )
-                    )
                 }
             }
         }
@@ -342,7 +326,6 @@ private fun AdherenceDetail(
                     Text(r.note, style = MaterialTheme.typography.labelSmall)
                 }
             }
-            RuleIdRow(report.ruleIds, max = 5)
         }
     }
 }

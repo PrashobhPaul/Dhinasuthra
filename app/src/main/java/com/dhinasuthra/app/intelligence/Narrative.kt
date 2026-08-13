@@ -150,8 +150,8 @@ object AnomalyEngine {
                         significance = band.confidence * 0.6f,
                         ruleIds = listOf(AnomalyRules.YOUR_OWN_BASELINE.id, AnomalyRules.MISSING_DATA_IS_NOT_ANOMALY.id),
                         evidence = listOf(
-                            "${AnomalyRules.YOUR_OWN_BASELINE.id} · expected around ${TimeUtils.formatMinuteOfDay(PatternEngine.denormalise(band.typicalStartMin))} from ${band.observations} past days",
-                            "${AnomalyRules.MISSING_DATA_IS_NOT_ANOMALY.id} · ${(day.coverageFraction * 100).roundToInt()}% of the day was reconstructed, so this is a genuine absence rather than a blind spot"
+                            "expected around ${TimeUtils.formatMinuteOfDay(PatternEngine.denormalise(band.typicalStartMin))} from ${band.observations} past days",
+                            "${(day.coverageFraction * 100).roundToInt()}% of the day was reconstructed, so this is a genuine absence rather than a blind spot"
                         )
                     )
                 }
@@ -170,8 +170,8 @@ object AnomalyEngine {
                     significance = significance(abs(delta), band),
                     ruleIds = listOf(AnomalyRules.YOUR_OWN_BASELINE.id, AnomalyRules.BEYOND_YOUR_SPREAD.id),
                     evidence = listOf(
-                        "${AnomalyRules.BEYOND_YOUR_SPREAD.id} · ${TimeUtils.formatMinuteOfDay(PatternEngine.denormalise(actualStart))} is outside your usual ${TimeUtils.formatMinuteOfDay(PatternEngine.denormalise(band.p10))}–${TimeUtils.formatMinuteOfDay(PatternEngine.denormalise(band.p90))} window",
-                        "${AnomalyRules.YOUR_OWN_BASELINE.id} · compared with your own median across ${band.observations} ${dayType.name.lowercase()} observations"
+                        "${TimeUtils.formatMinuteOfDay(PatternEngine.denormalise(actualStart))} is outside your usual ${TimeUtils.formatMinuteOfDay(PatternEngine.denormalise(band.p10))}–${TimeUtils.formatMinuteOfDay(PatternEngine.denormalise(band.p90))} window",
+                        "compared with your own median across ${band.observations} ${dayType.name.lowercase()} observations"
                     )
                 )
             }
@@ -191,8 +191,8 @@ object AnomalyEngine {
                         significance = (abs(dd).toFloat() / (typicalDuration + 60)).coerceIn(0f, 1f) * band.confidence,
                         ruleIds = listOf(AnomalyRules.YOUR_OWN_BASELINE.id, AnomalyRules.ONE_DAY_IS_NOT_A_TREND.id),
                         evidence = listOf(
-                            "${AnomalyRules.YOUR_OWN_BASELINE.id} · ${TimeUtils.formatDurationMin(actualDuration)} today against a usual ${TimeUtils.formatDurationMin(typicalDuration)}",
-                            "${AnomalyRules.ONE_DAY_IS_NOT_A_TREND.id} · stated as one day, not as a trend"
+                            "${TimeUtils.formatDurationMin(actualDuration)} today against a usual ${TimeUtils.formatDurationMin(typicalDuration)}",
+                            "stated as one day, not as a trend"
                         )
                     )
                 }
@@ -308,8 +308,8 @@ object NarrativeEngine {
                     significance = 0.6f,
                     ruleIds = listOf(ConsistencyRules.DEFINITION.id, ConsistencyRules.MIN_OBSERVATIONS.id),
                     evidence = listOf(
-                        "${ConsistencyRules.DEFINITION.id} · consistency = 1 − (interquartile range ${best.iqr}m ÷ 180m)",
-                        "${PatternRules.SPREAD_IS_REPORTED.id} · range ${TimeUtils.formatMinuteOfDay(PatternEngine.denormalise(best.p10))}–${TimeUtils.formatMinuteOfDay(PatternEngine.denormalise(best.p90))}"
+                        "consistency = 1 − (interquartile range ${best.iqr}m ÷ 180m)",
+                        "range ${TimeUtils.formatMinuteOfDay(PatternEngine.denormalise(best.p10))}–${TimeUtils.formatMinuteOfDay(PatternEngine.denormalise(best.p90))}"
                     )
                 )
             }
@@ -327,8 +327,8 @@ object NarrativeEngine {
                 significance = 0.7f,
                 ruleIds = listOf(PatternRules.CHANGE_POINT.id, PatternRules.RECENCY_WEIGHT.id),
                 evidence = listOf(
-                    "${PatternRules.RECENCY_WEIGHT.id} · last 7 days compared with the preceding 21",
-                    "${PatternRules.CHANGE_POINT.id} · median moved ${abs(change.deltaMin)} minutes across ${change.recentDays} recent days"
+                    "last 7 days compared with the preceding 21",
+                    "median moved ${abs(change.deltaMin)} minutes across ${change.recentDays} recent days"
                 )
             )
             break
@@ -347,8 +347,8 @@ object NarrativeEngine {
                     significance = 0.65f,
                     ruleIds = listOf(PatternRules.LIFECYCLE.id, RoutineRules.NEEDS_ESTABLISHED_PATTERN.id),
                     evidence = listOf(
-                        "${PatternRules.LIFECYCLE.id} · ${fresh.observations} observations with an interquartile range of ${fresh.iqr} minutes",
-                        "${RoutineRules.SUGGEST_NEVER_IMPOSE.id} · offered as a suggestion; nothing is activated for you"
+                        "${fresh.observations} observations with an interquartile range of ${fresh.iqr} minutes",
+                        "offered as a suggestion; nothing is activated for you"
                     )
                 )
             }
@@ -364,8 +364,8 @@ object NarrativeEngine {
                 significance = 0.45f + (unknown / 1440f),
                 ruleIds = listOf(TimelineRules.HONEST_UNKNOWN.id, TimelineRules.GAP_NEEDS_CONFIDENCE.id),
                 evidence = listOf(
-                    "${TimelineRules.GAP_NEEDS_CONFIDENCE.id} · no explanation reached the confidence bar for these periods",
-                    "${TimelineRules.HONEST_UNKNOWN.id} · ${(today.coverageFraction * 100).roundToInt()}% of the lived day is accounted for"
+                    "no explanation reached the confidence bar for these periods",
+                    "${(today.coverageFraction * 100).roundToInt()}% of the lived day is accounted for"
                 )
             )
         }

@@ -123,10 +123,21 @@ class EvidenceLedger {
     /** The hardest cap any guard has applied — callers blending in other scores must respect it. */
     fun ceiling(): Float = ceiling
 
-    /** Rule ids in fire order, e.g. "SLP-03, SLP-07" — stored on episodes. */
+    /**
+     * Rule ids in fire order, e.g. "SLP-03, SLP-07". Kept on episodes so a
+     * conclusion can be traced back in tests and logs — never shown to the user,
+     * who cares about the finding rather than the machinery behind it.
+     */
     fun ruleIds(): List<String> = _fired.map { it.rule.id }
 
-    fun explanations(): List<String> = _fired.map { "${it.rule.id} · ${it.detail}" }
+    /**
+     * The human half of the ledger: plain sentences, no rule numbers. This is
+     * what the interface shows when someone asks why.
+     */
+    fun explanations(): List<String> = _fired.map { it.detail }
+
+    /** Id-prefixed form, for test failure messages and debug logging only. */
+    fun traced(): List<String> = _fired.map { "${it.rule.id} · ${it.detail}" }
 
     fun isEmpty(): Boolean = _fired.isEmpty()
 

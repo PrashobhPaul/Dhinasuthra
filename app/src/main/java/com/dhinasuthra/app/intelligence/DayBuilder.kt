@@ -88,14 +88,16 @@ object DayBuilder {
                     TimelineRules.PERSONAL_TIME,
                     "awake at ${p.placeName ?: p.location.label} with nothing else explaining ${TimeUtils.formatMinuteOfDay(from)}–${TimeUtils.formatMinuteOfDay(to)}"
                 )
-                p.evidence.forEach { detail ->
-                    val id = detail.substringBefore(" ·")
-                    RuleBook.byId(id)?.let { ledger.add(it, detail.substringAfter("· "), 0f) }
-                }
-                out += EpisodeCandidate.from(
+                val candidate = EpisodeCandidate.from(
                     from, to,
                     if (p.location == LocationType.GYM) ActivityType.EXERCISE else ActivityType.PERSONAL,
                     p.location, ledger, placeName = p.placeName, priority = 3
+                )
+                // Carry the reconciliation's own findings through, so "why?" also
+                // explains how the stay itself was established.
+                out += candidate.copy(
+                    ruleIds = (candidate.ruleIds + p.ruleIds).distinct(),
+                    evidence = (candidate.evidence + p.evidence).distinct()
                 )
             }
         }

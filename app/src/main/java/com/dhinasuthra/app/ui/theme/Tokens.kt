@@ -7,7 +7,6 @@ import com.dhinasuthra.app.intelligence.ActivityType
 import com.dhinasuthra.app.intelligence.ConfidenceBand
 import com.dhinasuthra.app.intelligence.LocationType
 import com.dhinasuthra.app.intelligence.PatternLifecycle
-import com.dhinasuthra.app.intelligence.RuleDomain
 
 /**
  * The design tokens (spec §29, §30).
@@ -92,21 +91,6 @@ object DsTokens {
         PatternLifecycle.LEARNING -> InkMuted
         PatternLifecycle.UNSTABLE -> Gold
         PatternLifecycle.STALE -> Rose
-    }
-
-    fun colorFor(domain: RuleDomain): Color = when (domain) {
-        RuleDomain.SLEEP -> Color(0xFF8B7CF6)
-        RuleDomain.MEAL -> Color(0xFF34D399)
-        RuleDomain.WORK -> Color(0xFFF59E0B)
-        RuleDomain.COMMUTE -> Color(0xFFFBBF24)
-        RuleDomain.LOCATION -> Color(0xFF3BA9FF)
-        RuleDomain.TIMELINE -> Color(0xFF5EEAD4)
-        RuleDomain.PATTERN -> Color(0xFF818CF8)
-        RuleDomain.ROUTINE -> Color(0xFFFF9E45)
-        RuleDomain.REMINDER -> Color(0xFFF5B33C)
-        RuleDomain.ANOMALY -> Color(0xFFFF5C7A)
-        RuleDomain.CONSISTENCY -> Color(0xFF3BC9F0)
-        RuleDomain.NARRATIVE -> Color(0xFFA78BFA)
     }
 
     /** Gentle vertical wash used inside cards so surfaces read as glass, not paint. */

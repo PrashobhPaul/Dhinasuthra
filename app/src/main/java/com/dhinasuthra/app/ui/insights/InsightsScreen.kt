@@ -38,7 +38,6 @@ import com.dhinasuthra.app.ui.foundation.EmptyState
 import com.dhinasuthra.app.ui.foundation.GlassCard
 import com.dhinasuthra.app.ui.foundation.Hairline
 import com.dhinasuthra.app.ui.foundation.Reveal
-import com.dhinasuthra.app.ui.foundation.RuleIdRow
 import com.dhinasuthra.app.ui.foundation.SectionTitle
 import com.dhinasuthra.app.ui.foundation.StatTile
 import com.dhinasuthra.app.ui.state.rememberTimeViewModel
@@ -52,7 +51,7 @@ import kotlin.math.roundToInt
  * Insights = meaning (spec §24, §51).
  *
  * Deliberately not a dashboard. Sentences first, one chart per idea, and nothing
- * printed that the narrative rules would not let the app say out loud.
+ * printed that the app would not be willing to say out loud.
  */
 @Composable
 fun InsightsScreen() {
@@ -245,12 +244,6 @@ fun InsightsScreen() {
                                 )
                             }
                         }
-                        RuleIdRow(
-                            listOf(
-                                com.dhinasuthra.app.intelligence.ConsistencyRules.DAY_SIMILARITY.id,
-                                com.dhinasuthra.app.intelligence.AnomalyRules.DESCRIBE_DONT_JUDGE.id
-                            )
-                        )
                     }
                 }
             }
@@ -282,7 +275,6 @@ private fun InsightCard(insight: Insight) {
             Text(insight.kind.label.uppercase(), style = MaterialTheme.typography.labelSmall)
             Text(insight.headline, style = MaterialTheme.typography.titleMedium)
             Text(insight.detail, style = MaterialTheme.typography.bodySmall)
-            RuleIdRow(insight.ruleIds)
             if (expanded) {
                 Hairline()
                 insight.evidence.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
@@ -359,14 +351,6 @@ private fun PatternCard(
                     )
                 }
                 Text(band.lifecycle.description, style = MaterialTheme.typography.bodySmall)
-                RuleIdRow(
-                    listOf(
-                        com.dhinasuthra.app.intelligence.PatternRules.MEDIAN_NOT_MEAN.id,
-                        com.dhinasuthra.app.intelligence.PatternRules.SPREAD_IS_REPORTED.id,
-                        com.dhinasuthra.app.intelligence.PatternRules.OUTLIERS_EXCLUDED_NOT_DELETED.id,
-                        com.dhinasuthra.app.intelligence.PatternRules.LIFECYCLE.id
-                    )
-                )
             }
         }
     }

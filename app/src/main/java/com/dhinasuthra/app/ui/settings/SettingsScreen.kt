@@ -1,8 +1,10 @@
-package com.dhinasuthra.app.ui.more
+package com.dhinasuthra.app.ui.settings
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -26,12 +29,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.dhinasuthra.app.BuildConfig
 import com.dhinasuthra.app.DhinaSuthraApp
 import com.dhinasuthra.app.core.model.NotificationPrivacy
-import com.dhinasuthra.app.intelligence.RuleBook
 import com.dhinasuthra.app.simulate.DaySimulator
 import com.dhinasuthra.app.ui.foundation.CardBody
 import com.dhinasuthra.app.ui.foundation.DsScreen
@@ -40,34 +43,32 @@ import com.dhinasuthra.app.ui.foundation.Hairline
 import com.dhinasuthra.app.ui.foundation.Reveal
 import com.dhinasuthra.app.ui.foundation.SectionTitle
 import com.dhinasuthra.app.ui.places.PlacesScreen
-import com.dhinasuthra.app.ui.rules.RuleBookScreen
 import com.dhinasuthra.app.ui.state.rememberTimeViewModel
 import com.dhinasuthra.app.ui.theme.DsTokens
 import com.dhinasuthra.app.ui.today.eventTitle
 import com.dhinasuthra.app.work.Workers
 import kotlinx.coroutines.launch
 
-private enum class MorePage { ROOT, PLACES, RULES }
+private enum class SettingsPage { ROOT, PLACES }
 
 /**
- * More: places, the Rule Book, prompting, privacy and your data.
+ * Settings — reached from the gear on Today rather than a tab of its own.
  *
- * Spec §48 says not to add a tab merely because functionality exists, so the two
- * heavyweight secondary screens live behind this one.
+ * Spec §48: don't spend a tab on something people open twice a month. Places
+ * lives here too, since it is a reference list rather than a daily destination.
  */
 @Composable
-fun MoreScreen() {
-    var page by remember { mutableStateOf(MorePage.ROOT) }
+fun SettingsScreen(onBack: () -> Unit = {}) {
+    var page by remember { mutableStateOf(SettingsPage.ROOT) }
 
     when (page) {
-        MorePage.PLACES -> PlacesScreen(onBack = { page = MorePage.ROOT })
-        MorePage.RULES -> RuleBookScreen(onBack = { page = MorePage.ROOT })
-        MorePage.ROOT -> MoreRoot(onOpen = { page = it })
+        SettingsPage.PLACES -> PlacesScreen(onBack = { page = SettingsPage.ROOT })
+        SettingsPage.ROOT -> SettingsRoot(onOpen = { page = it }, onBack = onBack)
     }
 }
 
 @Composable
-private fun MoreRoot(onOpen: (MorePage) -> Unit) {
+private fun SettingsRoot(onOpen: (SettingsPage) -> Unit, onBack: () -> Unit) {
     val ctx = LocalContext.current
     val app = DhinaSuthraApp.get(ctx)
     val scope = rememberCoroutineScope()
@@ -89,29 +90,30 @@ private fun MoreRoot(onOpen: (MorePage) -> Unit) {
         ActivityResultContracts.CreateDocument("text/csv")
     ) { uri -> uri?.let { scope.launch { app.container.dataExporter.exportCsv(it); statusLine = "Exported CSV." } } }
 
-    DsScreen(title = "More", subtitle = "Places, rules, privacy and your data") {
+    DsScreen(
+        title = "Settings",
+        subtitle = "Your places, your prompts, your data",
+        trailing = {
+            Text(
+                "Done",
+                style = MaterialTheme.typography.labelLarge.copy(color = DsTokens.Gold),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(DsTokens.Hairline)
+                    .clickable { onBack() }
+                    .padding(horizontal = 14.dp, vertical = 7.dp)
+            )
+        }
+    ) {
 
-        item { SectionTitle("Explore") }
+        item { SectionTitle("Your places") }
         item {
             Reveal(0) {
-                GlassCard(Modifier.fillMaxWidth(), tint = DsTokens.Cyan, onClick = { onOpen(MorePage.PLACES) }) {
+                GlassCard(Modifier.fillMaxWidth(), tint = DsTokens.Cyan, onClick = { onOpen(SettingsPage.PLACES) }) {
                     CardBody {
                         Text("📍  Places", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "Where your time happens. Strictly location — never mixed with what you were doing.",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-            }
-        }
-        item {
-            Reveal(1) {
-                GlassCard(Modifier.fillMaxWidth(), tint = DsTokens.Violet, onClick = { onOpen(MorePage.RULES) }) {
-                    CardBody {
-                        Text("🧠  Rule Book", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            "All ${RuleBook.count} rules behind every conclusion this app reaches — readable, searchable, and each one naming the code that enforces it.",
+                            "Where your time happens. Name the places you keep returning to so DhinaSuthra can talk about them properly.",
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -342,7 +344,7 @@ private fun MoreRoot(onOpen: (MorePage) -> Unit) {
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "${RuleBook.count} deterministic rules · zero network calls · everything derived on this device",
+                    "Zero network calls · everything worked out on this device",
                     style = MaterialTheme.typography.labelSmall.copy(color = DsTokens.InkFaint)
                 )
             }

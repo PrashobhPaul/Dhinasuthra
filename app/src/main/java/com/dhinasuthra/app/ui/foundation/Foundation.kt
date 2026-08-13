@@ -442,30 +442,6 @@ fun EmptyState(title: String, body: String, modifier: Modifier = Modifier) {
     }
 }
 
-/** Draws the tiny rule-id pills that let any claim be traced to its rule. */
-@Composable
-fun RuleIdRow(ruleIds: List<String>, modifier: Modifier = Modifier, max: Int = 4) {
-    if (ruleIds.isEmpty()) return
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-        ruleIds.distinct().take(max).forEach { id ->
-            Box(
-                Modifier
-                    .clip(RoundedCornerShape(7.dp))
-                    .background(Color.White.copy(alpha = 0.055f))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            ) {
-                Text(id, style = MaterialTheme.typography.labelSmall.copy(color = DsTokens.InkMuted))
-            }
-        }
-        if (ruleIds.distinct().size > max) {
-            Text(
-                "+${ruleIds.distinct().size - max}",
-                style = MaterialTheme.typography.labelSmall
-            )
-        }
-    }
-}
-
 /** Shared helper: a smooth 0→1 progress that restarts whenever [key] changes. */
 @Composable
 fun rememberEntryProgress(key: Any?, durationMs: Int = 900): Float {
