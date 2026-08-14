@@ -217,10 +217,22 @@ class MigrationTest {
     }
 
     private fun assertEntityMatches(db: JdbcMigrationDb, table: String, entity: Class<*>) {
-        val fields = entity.declaredFields.filterNot { it.isSynthetic }
+        // A Room column is always a non-static instance field. Static ones are
+        // the compiler's business, not the schema's — the Compose plugin adds a
+        // `$stable` to classes in this module, and Kotlin adds its own `$`-named
+        // members; none of them are columns.
+        val fields = entity.declaredFields.filter {
+            !it.isSynthetic &&
+                !java.lang.reflect.Modifier.isStatic(it.modifiers) &&
+                !it.name.contains('$')
+        }
         val declared = fields.map { it.name }.toSet()
         val actual = db.columnTypes(table).keys
-        assertEquals("column names differ for $table", declared, actual)
+        assertEquals(
+            "column names differ for $table — " +
+                "only in the entity: ${declared - actual}; only in the migration: ${actual - declared}",
+            declared, actual
+        )
 
         val types = db.columnTypes(table)
         val notNull = db.notNullColumns(table)
