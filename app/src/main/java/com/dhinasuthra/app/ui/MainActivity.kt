@@ -114,6 +114,9 @@ class MainActivity : ComponentActivity() {
                     app.container.analyticsEngine.dailyRollup(TimeUtils.epochDay())
                     app.container.reminderScheduler.planToday()
                     app.container.timeIntelligence.invalidate()
+                    // Re-reads the day's signals, and after an app update reaches
+                    // back over the last fortnight — provisional findings only.
+                    app.container.activityIntelligence.refreshAfterEngineChange()
                 }
             }
         }
