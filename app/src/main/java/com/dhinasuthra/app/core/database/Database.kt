@@ -369,9 +369,12 @@ class Converters {
         PlaceEntity::class, RawSensorEventEntity::class, ContextEventEntity::class,
         RoutineEventEntity::class, RoutinePatternEntity::class, ReminderRuleEntity::class,
         ReminderInstanceEntity::class, IntentionalDeviationEntity::class,
-        DailySummaryEntity::class, AppStateEntity::class
+        DailySummaryEntity::class, AppStateEntity::class,
+        // v2 — activity intelligence (plan §3–§5)
+        ActivityEventEntity::class, ActivityEvidenceEntity::class,
+        DeviceSignalEntity::class, MigrationHistoryEntity::class
     ],
-    version = 1,
+    version = MigrationRegistry.CURRENT_VERSION,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -384,11 +387,30 @@ abstract class DhinaSuthraDatabase : RoomDatabase() {
     abstract fun reminderDao(): ReminderDao
     abstract fun dailySummaryDao(): DailySummaryDao
     abstract fun appStateDao(): AppStateDao
+    abstract fun activityEventDao(): ActivityEventDao
+    abstract fun activityEvidenceDao(): ActivityEvidenceDao
+    abstract fun deviceSignalDao(): DeviceSignalDao
+    abstract fun migrationHistoryDao(): MigrationHistoryDao
 
     companion object {
-        fun build(context: Context): DhinaSuthraDatabase =
-            Room.databaseBuilder(context, DhinaSuthraDatabase::class.java, "dhinasuthra.db")
-                .fallbackToDestructiveMigrationOnDowngrade()
-                .build()
+        /**
+         * The builder, with every declared migration attached.
+         *
+         * Note what is *absent*: no `fallbackToDestructiveMigration`, and no
+         * `fallbackToDestructiveMigrationOnDowngrade`. Both of those resolve a
+         * schema problem by deleting the user's history, which plan §2 forbids
+         * outright. A missing migration path must fail loudly and be caught by
+         * [DatabaseGuardian], not quietly cost someone their year of data.
+         */
+        fun builder(context: Context, name: String = DatabaseGuardian.DB_NAME) =
+            Room.databaseBuilder(context, DhinaSuthraDatabase::class.java, name)
+                .addMigrations(*MigrationRegistry.roomMigrations())
+
+        /**
+         * Prefer [DatabaseGuardian.open], which snapshots before migrating and can
+         * recover from a failure. This exists for tests and for callers that
+         * genuinely only want a handle.
+         */
+        fun build(context: Context): DhinaSuthraDatabase = builder(context).build()
     }
 }

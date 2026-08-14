@@ -62,6 +62,26 @@ what led it there** and how sure it is.
 
 Most apps guess and hope you don't check. This one shows its working.
 
+### ✋ And it asks before it decides
+
+> *🍱 Lunch break · 12:52–13:42*
+> *Detected from: you left your desk · you'd moved somewhere else · you came back*
+> **[Yes, that's right] [Change] [Not this]**
+
+Findings arrive as **questions, not verdicts**. One tap makes something history;
+one tap changes it. Say *tea* at 10:42 a few times and it stops asking — that's
+now simply when your tea break is. Nothing you've confirmed is ever quietly
+rewritten by a later, cleverer version of the app.
+
+### 🗄 Updating the app never costs you a day
+
+Your history is the whole point, and it gets more valuable the older it gets. So
+before an update touches the database it **takes a copy first**, checks every
+record afterwards, and if anything at all goes wrong it puts the original back
+rather than pressing on. There is no code path that deletes or resets your data
+during an upgrade — and the upgrade is tested on every push against a
+four-month-old database, not just a fresh install.
+
 ### 🔒 Your day never leaves your phone
 
 Not *"we don't sell your data"*. The app holds **no internet permission at all** —
@@ -142,7 +162,7 @@ inference, work decomposition and the rest on every push.
 | | |
 |---|---|
 | **Today** | How's it going, what did it notice, what's next, how close is this to your normal. |
-| **Timeline** | What actually happened — every episode with its status and evidence. Long-press to correct it, and your correction outranks the engine forever after. |
+| **Timeline** | What actually happened — every episode with its status and evidence, plus the handful of moments waiting on a yes or no. Long-press to correct anything, and your correction outranks the engine forever after. |
 | **Insights** | What changed and why it matters. Ranked, hedged, never padded. |
 | **Routine** | Turn a pattern you keep repeating into a timetable, then see planned against actual. When life moves, it offers to move the plan instead of nagging you. |
 | **Time Lab** | Everything. Range × lens × view, and the 3D landscape. |
@@ -173,10 +193,13 @@ Activity @ Location — and `LensProjector` is the only way to build one.
 
 | Layer | What's inside |
 |---|---|
-| Sensing | Geofencing, Activity Recognition transitions, 15-minute context samples (screen / charging / last-known location), boot + timezone recovery |
+| Sensing | Geofencing, Activity Recognition transitions, 15-minute context samples (screen / charging / last-known location), live screen + charger transitions, boot + timezone recovery |
 | Context fusion | Debounced state machine → HOME / OFFICE / TRAVEL / KNOWN_PLACE / UNKNOWN_STAY segments in Room |
 | Reconciliation | Crossings raise *candidates*; dwell, continuity and context confirm them before anything is written to history |
 | Interpreters | Sleep, meals, work decomposition, commute, gap resolution — each pure Kotlin, each returning the evidence ledger that produced it |
+| Activity detection | An awakening state machine for wake, one boundary engine for breaks and interruptions, contextual windows for lunch and tea, TV and call signals — registered rather than chained, so a new one is an entry in a list |
+| Lifecycle | Inferred → confirmed or corrected → trusted history. Corrections supersede rather than erase; only provisional findings are ever recomputed; raw observations are immutable |
+| Migrations | Additive, idempotent, validated before the version is accepted, snapshotted beforehand, restored on failure. Never destructive, never on startup |
 | Patterns | Median, IQR, SD, percentiles, consistency, Tukey outlier exclusion, and a lifecycle: Learning → Emerging → Established, plus Unstable and Stale |
 | Routines | Timetables with per-entry tolerance derived from your own spread; transparent adherence arithmetic; drift proposals |
 | Narration | Insights ranked by significance, hedged in proportion to confidence, each carrying its measurement |
@@ -233,6 +256,9 @@ permanent foreground service or other keep-alive hacks.
 - String extraction for Malayalam / Hindi / Telugu / Tamil / Kannada — copy still
   lives in Kotlin
 - Import / restore of exported data
+- Call and notification signals: the detectors and their tests exist, but wiring
+  a real source needs permissions that aren't on the reviewed allowlist yet
+- TV remote evidence depends on an explicit, opt-in integration
 - Release signing: builds are currently debug-signed
 
 </details>

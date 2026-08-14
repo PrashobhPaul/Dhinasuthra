@@ -37,6 +37,8 @@ import com.dhinasuthra.app.DhinaSuthraApp
 import com.dhinasuthra.app.core.model.NotificationPrivacy
 import com.dhinasuthra.app.simulate.DaySimulator
 import com.dhinasuthra.app.ui.foundation.CardBody
+import com.dhinasuthra.app.core.database.DatabaseGuardian
+import com.dhinasuthra.app.core.database.DatabaseStatus
 import com.dhinasuthra.app.ui.foundation.DsScreen
 import com.dhinasuthra.app.ui.foundation.GlassCard
 import com.dhinasuthra.app.ui.foundation.Hairline
@@ -82,6 +84,26 @@ private fun SettingsRoot(onOpen: (SettingsPage) -> Unit, onBack: () -> Unit) {
     var statusLine by remember { mutableStateOf<String?>(null) }
 
     val rules by app.container.db.reminderDao().observeRules().collectAsState(initial = emptyList())
+
+    // Hoisted out of the list: DsScreen's content lambda is a LazyListScope, not
+    // a composable scope, so remember cannot be called inside it.
+    val dataSafetySummary = remember {
+        val guarded = app.container.database
+        val backups = DatabaseGuardian.backups(ctx).size
+        val kept = if (backups == 1) "A copy of it is" else "$backups copies of it are"
+        when (guarded.status) {
+            DatabaseStatus.SAFE_MODE ->
+                "Something went wrong updating your history, so DhinaSuthra left it completely untouched " +
+                    "rather than risk it. Nothing was deleted. Reinstalling the previous version will " +
+                    "open it again."
+            DatabaseStatus.MIGRATED, DatabaseStatus.RECOVERED ->
+                "This update moved your history forward and checked every record afterwards. " +
+                    "$kept still saved on this device, just in case."
+            else ->
+                if (backups == 0) "Before any update changes your history, DhinaSuthra copies it first."
+                else "$kept saved on this device from the last update, in case anything ever needs going back."
+        }
+    }
 
     val exportJsonLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
@@ -291,6 +313,25 @@ private fun SettingsRoot(onOpen: (SettingsPage) -> Unit, onBack: () -> Unit) {
                         TextButton(onClick = { showDeleteConfirm = true }) {
                             Text("Delete all my data", color = DsTokens.Rose)
                         }
+                    }
+                }
+            }
+        }
+
+        // Plan §27: the safety net is worth showing. A user who is asked to
+        // trust an app with years of their life should be able to see that the
+        // app takes a copy before it changes anything, and that the copy is
+        // still there.
+        item { SectionTitle("Updates") }
+        item {
+            Reveal(6) {
+                GlassCard(Modifier.fillMaxWidth(), tint = DsTokens.Green, interactive = false) {
+                    CardBody {
+                        Text("Your history survives every update", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            dataSafetySummary,
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
                 }
             }

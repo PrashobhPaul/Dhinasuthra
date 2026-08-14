@@ -85,4 +85,5 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
 
     testImplementation(libs.junit)
+    testImplementation(libs.sqlite.jdbc)
 }

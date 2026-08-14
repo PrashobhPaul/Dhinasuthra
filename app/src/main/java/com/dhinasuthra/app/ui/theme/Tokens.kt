@@ -60,6 +60,9 @@ object DsTokens {
         ActivityType.DINNER to Color(0xFF22C55E),
         ActivityType.PERSONAL to Color(0xFF94A3B8),
         ActivityType.LEISURE to Color(0xFF818CF8),
+        ActivityType.WATCHING_TV to Color(0xFF60A5FA),
+        ActivityType.PHONE_CALL to Color(0xFF2DD4BF),
+        ActivityType.INTERRUPTION to Color(0xFF64748B),
         ActivityType.UNKNOWN to Color(0xFF39435C)
     )
 

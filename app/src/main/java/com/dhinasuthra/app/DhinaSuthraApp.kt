@@ -2,11 +2,13 @@ package com.dhinasuthra.app
 
 import android.app.Application
 import android.content.Context
+import com.dhinasuthra.app.activity.ActivityIntelligence
+import com.dhinasuthra.app.activity.ActivityRepository
 import com.dhinasuthra.app.analytics.AnalyticsEngine
 import com.dhinasuthra.app.context.ContextEngine
 import com.dhinasuthra.app.context.SleepEstimator
 import com.dhinasuthra.app.core.Settings
-import com.dhinasuthra.app.core.database.DhinaSuthraDatabase
+import com.dhinasuthra.app.core.database.DatabaseGuardian
 import com.dhinasuthra.app.core.time.DeviceTimeProvider
 import com.dhinasuthra.app.export.DataExporter
 import com.dhinasuthra.app.intelligence.CorrectionStore
@@ -32,7 +34,15 @@ import com.dhinasuthra.app.work.Workers
  */
 class AppContainer(context: Context) {
     val settings = Settings(context)
-    val db = DhinaSuthraDatabase.build(context)
+
+    /**
+     * Opened through the guardian, never directly (plan §2). It snapshots the
+     * existing file before migrating, validates afterwards, and — if anything
+     * goes wrong — restores rather than recreates. [database] carries the
+     * outcome so the privacy screen can tell the user what happened.
+     */
+    val database = DatabaseGuardian.open(context)
+    val db = database.db
     val timeProvider = DeviceTimeProvider()
     val greetingEngine = GreetingEngine(timeProvider)
 
@@ -62,6 +72,20 @@ class AppContainer(context: Context) {
     val correctionStore = CorrectionStore(db.appStateDao())
     val timeIntelligence = TimeIntelligenceRepository(db, timetableStore, correctionStore)
 
+    // Activity intelligence (plan §33): signals in, evidence-backed provisional
+    // activities out, user confirmation on top. Detectors are registered rather
+    // than hardcoded, so the next round of feedback adds one instead of
+    // rewriting a pipeline.
+    val activityRepository = ActivityRepository(
+        eventDao = db.activityEventDao(),
+        evidenceDao = db.activityEvidenceDao(),
+        signalDao = db.deviceSignalDao(),
+        rawDao = db.rawSensorEventDao(),
+        placeDao = db.placeDao(),
+        appStateDao = db.appStateDao()
+    )
+    val activityIntelligence = ActivityIntelligence(context.applicationContext, activityRepository)
+
     val timelineEditor = TimelineEditor(db.routineEventDao()) { day ->
         // §49A.5/49A.6: edits recalculate the affected day, patterns and — via
         // pattern relearn — downstream adherence. Reminders replan for today.
@@ -84,6 +108,7 @@ class DhinaSuthraApp : Application() {
         NotificationChannels.create(this)
         if (container.settings.onboarded && container.settings.trackingActive) {
             Workers.scheduleAll(this)
+            container.activityIntelligence.start()
         }
     }
 

@@ -30,6 +30,10 @@ enum class ActivityType(val label: String, val icon: String) {
     DINNER("Dinner", "🍽"),
     PERSONAL("Personal", "🏡"),
     LEISURE("Leisure", "🎧"),
+    WATCHING_TV("Watching TV", "📺"),
+    PHONE_CALL("Call", "📞"),
+    /** A short step away from what you were doing, before it resumes (plan §10). */
+    INTERRUPTION("Stepped away", "🚶"),
     UNKNOWN("Unclassified", "❔");
 
     val isMeal: Boolean get() = this == BREAKFAST || this == LUNCH || this == DINNER

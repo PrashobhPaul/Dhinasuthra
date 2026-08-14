@@ -56,6 +56,7 @@ import com.dhinasuthra.app.ui.foundation.DsSafeArea
 import com.dhinasuthra.app.ui.foundation.GlassCard
 import com.dhinasuthra.app.ui.foundation.Hairline
 import com.dhinasuthra.app.ui.foundation.Reveal
+import com.dhinasuthra.app.ui.state.rememberActivityViewModel
 import com.dhinasuthra.app.ui.state.rememberTimeViewModel
 import com.dhinasuthra.app.ui.theme.DsTokens
 import com.dhinasuthra.app.ui.viz.DayRibbon
@@ -75,6 +76,10 @@ import java.time.format.DateTimeFormatter
 fun TimelineScreen() {
     val vm = rememberTimeViewModel()
     val state by vm.state.collectAsState()
+    // Provisional findings live in their own store: they change on every tap and
+    // must not force a whole-day reconstruction to redraw.
+    val activityVm = rememberActivityViewModel()
+    val activityState by activityVm.state.collectAsState()
     var day by remember { mutableLongStateOf(TimeUtils.epochDay()) }
     var reconstruction by remember { mutableStateOf<DayReconstruction?>(null) }
     var correcting by remember { mutableStateOf<TimeEpisode?>(null) }
@@ -158,6 +163,14 @@ fun TimelineScreen() {
             if (recon == null) {
                 item { Text("Reconstructing…", style = MaterialTheme.typography.bodySmall) }
                 return@LazyColumn
+            }
+
+            // Ahead of the day itself: the handful of things DhinaSuthra noticed
+            // and would like confirmed before they become history (plan §19, §20).
+            if (day == today && activityState.pending.isNotEmpty()) {
+                item {
+                    MomentsToConfirm(activityVm, activityState.pending)
+                }
             }
 
             item {
