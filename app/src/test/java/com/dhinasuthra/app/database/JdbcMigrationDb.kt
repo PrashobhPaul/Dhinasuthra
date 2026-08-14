@@ -44,24 +44,29 @@ class JdbcMigrationDb(private val connection: Connection) : MigrationDb, AutoClo
         }
     }
 
+    // The three-argument member hides the two-argument `MigrationDb.query`
+    // extension inside this class, so these pass the empty argument array
+    // explicitly rather than relying on the shorthand.
+    private val none = emptyArray<Any?>()
+
     /** The version SQLite itself records — what Room reads to decide whether to migrate. */
     var userVersion: Int
-        get() = query("PRAGMA user_version") { it.getInt(0) }.firstOrNull() ?: 0
+        get() = query("PRAGMA user_version", none) { it.getInt(0) }.firstOrNull() ?: 0
         set(value) = exec("PRAGMA user_version = $value")
 
     fun columnTypes(table: String): Map<String, String> =
-        query("PRAGMA table_info(`$table`)") { it.getString(1).orEmpty() to it.getString(2).orEmpty() }
+        query("PRAGMA table_info(`$table`)", none) { it.getString(1).orEmpty() to it.getString(2).orEmpty() }
             .toMap()
 
     fun notNullColumns(table: String): Set<String> =
-        query("PRAGMA table_info(`$table`)") { it.getString(1).orEmpty() to it.getInt(3) }
+        query("PRAGMA table_info(`$table`)", none) { it.getString(1).orEmpty() to it.getInt(3) }
             .filter { it.second == 1 }.map { it.first }.toSet()
 
     fun indexNames(table: String): Set<String> =
-        query("PRAGMA index_list(`$table`)") { it.getString(1).orEmpty() }.toSet()
+        query("PRAGMA index_list(`$table`)", none) { it.getString(1).orEmpty() }.toSet()
 
     fun tableNames(): Set<String> =
-        query("SELECT name FROM sqlite_master WHERE type='table'") { it.getString(0).orEmpty() }.toSet()
+        query("SELECT name FROM sqlite_master WHERE type='table'", none) { it.getString(0).orEmpty() }.toSet()
 
     override fun close() = connection.close()
 

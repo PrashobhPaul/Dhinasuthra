@@ -412,6 +412,51 @@ class ActivityDetectionTest {
     }
 
     @Test
+    fun `when two detectors describe the same gap, the one that names it wins`() {
+        // Exactly what happens on a real lunch: the boundary engine reports
+        // stepping away, the contextual classifier reports lunch, both over the
+        // same minutes. The timeline must show one of them.
+        val w = window(
+            Signal(at(12, 52), SignalTypes.DEPARTED),
+            Signal(at(12, 53), SignalTypes.WALKING),
+            Signal(at(13, 42), SignalTypes.ARRIVED)
+        )
+        val raw = DetectorRegistry(listOf(BoundaryDetector(), ContextualBreakDetector()))
+            .run(w, context())
+        assertEquals("both detectors should fire", 2, raw.size)
+
+        val resolved = CandidateResolver.resolve(raw)
+
+        assertEquals(1, resolved.size)
+        assertEquals(ActivityCatalog.LUNCH, resolved.single().activityCode)
+    }
+
+    @Test
+    fun `a wake marker survives alongside activities that start later`() {
+        val wake = ActivityCandidate(ActivityCatalog.WAKE, at(7, 0), at(7, 0), 0.8f)
+        val lunch = ActivityCandidate(ActivityCatalog.LUNCH, at(12, 52), at(13, 42), 0.8f)
+
+        val resolved = CandidateResolver.resolve(listOf(wake, lunch))
+
+        assertEquals(2, resolved.size)
+        assertEquals(ActivityCatalog.WAKE, resolved.first().activityCode)
+    }
+
+    @Test
+    fun `an observed call outranks an inferred break over the same minutes`() {
+        val call = ActivityCandidate(
+            ActivityCatalog.PHONE_CALL, at(10, 40), at(10, 55), 0.9f,
+            status = ActivityStatus.SYSTEM_OBSERVED
+        )
+        val guess = ActivityCandidate(ActivityCatalog.TEA_BREAK, at(10, 42), at(10, 56), 0.95f)
+
+        val resolved = CandidateResolver.resolve(listOf(guess, call))
+
+        assertEquals(1, resolved.size)
+        assertEquals(ActivityCatalog.PHONE_CALL, resolved.single().activityCode)
+    }
+
+    @Test
     fun `an unknown activity code degrades to something readable`() {
         assertEquals("Lunch", ActivityCatalog.labelFor(ActivityCatalog.LUNCH))
         // Written by a future release this build has never heard of.

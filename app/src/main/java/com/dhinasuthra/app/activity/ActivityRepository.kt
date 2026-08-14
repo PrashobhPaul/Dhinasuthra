@@ -130,7 +130,10 @@ class ActivityRepository(
             userTruth = userTruth.map { it.toCandidate() }
         )
 
-        val candidates = registry.run(window, context)
+        // Detectors are independent, so two of them describing the same gap is
+        // expected rather than a bug — the resolver decides which one the
+        // timeline shows, and user truth outranks all of them.
+        val candidates = CandidateResolver.resolve(registry.run(window, context))
             .filterNot { candidate -> userTruth.any { it.overlaps(candidate) } }
 
         // Order matters: evidence first, because its delete is scoped by a

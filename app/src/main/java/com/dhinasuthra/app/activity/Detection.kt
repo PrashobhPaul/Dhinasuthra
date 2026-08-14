@@ -240,9 +240,13 @@ class SignalWindow(signals: List<Signal>) {
                 }
             }
         }
-        // A run still open at the end of the window counts up to the window edge.
+        // A run still open at the end of the window is closed at the last screen
+        // signal, not at the window edge. Otherwise a single SCREEN_ON at 09:10
+        // followed by a walk at 10:06 would be reported to the user as "your
+        // phone was in use for 56 minutes", which nobody observed.
         runStart?.let { start ->
-            val minutes = ((to - start) / 60_000L).toInt()
+            val closesAt = minOf(to, relevant.lastOrNull()?.timestamp ?: to)
+            val minutes = ((closesAt - start) / 60_000L).toInt()
             if (minutes > bestMinutes) {
                 bestMinutes = minutes
                 bestStart = start
@@ -359,5 +363,54 @@ class DetectorRegistry(val detectors: List<ActivityDetector>) {
                 CallDetector()
             )
         )
+    }
+}
+
+/**
+ * Decides which candidate wins when two detectors describe the same stretch of
+ * time.
+ *
+ * They will, by design. [BoundaryDetector] finds that you were away from your
+ * desk from 12:52 to 13:42; [ContextualBreakDetector] looks at the same gap and
+ * says it was lunch. Both are correct, but the timeline should show one of them,
+ * and it should be the one that says more.
+ *
+ * Keeping this here rather than inside the detectors is what lets them stay
+ * independent and separately testable — a new detector doesn't have to know what
+ * the others might also have found.
+ */
+object CandidateResolver {
+
+    /**
+     * A generic "you stepped away" loses to anything that can name the activity.
+     * Beyond that, an observed fact beats an inference, and a stronger
+     * conclusion beats a weaker one.
+     */
+    private fun rank(candidate: ActivityCandidate): Int = when {
+        candidate.status == ActivityStatus.SYSTEM_OBSERVED -> 3
+        candidate.activityCode == ActivityCatalog.INTERRUPTION -> 0
+        else -> 2
+    }
+
+    fun resolve(candidates: List<ActivityCandidate>): List<ActivityCandidate> {
+        val accepted = mutableListOf<ActivityCandidate>()
+        candidates
+            .sortedWith(compareByDescending<ActivityCandidate> { rank(it) }.thenByDescending { it.confidence })
+            .forEach { candidate ->
+                if (accepted.none { it.overlaps(candidate) }) accepted.add(candidate)
+            }
+        return accepted.sortedBy { it.start }
+    }
+
+    /**
+     * Zero-length markers (a wake is a moment, not a span) only collide with
+     * something that genuinely contains them.
+     */
+    private fun ActivityCandidate.overlaps(other: ActivityCandidate): Boolean {
+        val myEnd = end ?: start
+        val theirEnd = other.end ?: other.start
+        if (start == myEnd) return other.start < start && start < theirEnd
+        if (other.start == theirEnd) return start < other.start && other.start < myEnd
+        return start < theirEnd && other.start < myEnd
     }
 }
