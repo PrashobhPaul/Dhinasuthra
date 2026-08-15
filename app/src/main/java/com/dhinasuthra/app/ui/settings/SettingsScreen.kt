@@ -88,6 +88,7 @@ private fun SettingsRoot(onOpen: (SettingsPage) -> Unit, onBack: () -> Unit) {
     var privacyMinimal by remember { mutableStateOf(settings.notificationPrivacy == NotificationPrivacy.MINIMAL) }
     var name by remember { mutableStateOf(settings.userName) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var statusLine by remember { mutableStateOf<String?>(null) }
     var callsOn by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_CALL_LOG) ==
@@ -134,7 +135,6 @@ private fun SettingsRoot(onOpen: (SettingsPage) -> Unit, onBack: () -> Unit) {
             }
         }
     }
-    var statusLine by remember { mutableStateOf<String?>(null) }
 
     val rules by app.container.db.reminderDao().observeRules().collectAsState(initial = emptyList())
 

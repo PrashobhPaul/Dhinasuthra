@@ -108,8 +108,11 @@ class CallNotificationListener : NotificationListenerService() {
      */
     private fun hasRunningClock(notification: Notification): Boolean {
         val extras = notification.extras ?: return false
-        val shows = extras.getBoolean(Notification.EXTRA_SHOWS_CHRONOMETER, false)
-        val countingDown = extras.getBoolean(Notification.EXTRA_CHRONOMETER_COUNT_DOWN, false)
+        // Read by key rather than by constant: the framework does not expose
+        // EXTRA_SHOWS_CHRONOMETER as public API, though the extras it puts in
+        // every notification are the same either way.
+        val shows = extras.getBoolean(EXTRA_SHOWS_CHRONOMETER_KEY, false)
+        val countingDown = extras.getBoolean(EXTRA_CHRONOMETER_COUNT_DOWN_KEY, false)
         // A countdown is a timer running out, not a conversation running on.
         return shows && !countingDown
     }
@@ -124,6 +127,8 @@ class CallNotificationListener : NotificationListenerService() {
 
     companion object {
         private const val EXTRA_TEMPLATE_KEY = "android.template"
+        private const val EXTRA_SHOWS_CHRONOMETER_KEY = "android.showChronometer"
+        private const val EXTRA_CHRONOMETER_COUNT_DOWN_KEY = "android.chronometerCountDown"
 
         /** True once the user has granted notification access in Android Settings. */
         fun isEnabled(context: Context): Boolean = runCatching {
