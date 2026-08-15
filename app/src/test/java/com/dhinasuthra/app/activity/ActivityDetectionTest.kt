@@ -23,9 +23,13 @@ class ActivityDetectionTest {
     private fun at(hour: Int, minute: Int): Long =
         TimeUtils.instantAt(day, hour * 60 + minute).toEpochMilli()
 
-    private fun context(profiles: Map<String, LearnedProfile> = emptyMap()) = DetectionContext(
+    private fun context(
+        profiles: Map<String, LearnedProfile> = emptyMap(),
+        elapsedMin: Int = 1440
+    ) = DetectionContext(
         epochDay = day,
         profiles = profiles,
+        elapsedMin = elapsedMin,
         anchors = listOf(
             Anchor(DetectionContext.ANCHOR_HOME, 1L, "Home"),
             Anchor(DetectionContext.ANCHOR_DESK, 2L, "Office")
@@ -454,6 +458,85 @@ class ActivityDetectionTest {
 
         assertEquals(1, resolved.size)
         assertEquals(ActivityCatalog.PHONE_CALL, resolved.single().activityCode)
+    }
+
+    // -----------------------------------------------------------------------
+    // Asking unprompted — the app must not sit silent through a whole afternoon
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `a day with no sensor signals at all still asks about lunch`() {
+        // Exactly the reported case: a phone that observed nothing, and an app
+        // that consequently never wondered whether its owner had eaten.
+        val asked = MealPromptDetector().detect(SignalWindow.EMPTY, context(elapsedMin = 15 * 60))
+
+        val lunch = asked.single { it.activityCode == ActivityCatalog.LUNCH }
+        assertEquals(ActivityStatus.INFERRED, lunch.status)
+        assertTrue("a prompt must stay tentative", lunch.confidence < 0.5f)
+        assertTrue(lunch.reasons().isNotEmpty())
+    }
+
+    @Test
+    fun `it does not ask about lunch at half past twelve`() {
+        val asked = MealPromptDetector().detect(SignalWindow.EMPTY, context(elapsedMin = 12 * 60 + 30))
+
+        assertTrue(asked.none { it.activityCode == ActivityCatalog.LUNCH })
+    }
+
+    @Test
+    fun `by mid-afternoon it has asked about breakfast and lunch but not dinner`() {
+        val asked = MealPromptDetector().detect(SignalWindow.EMPTY, context(elapsedMin = 15 * 60))
+            .map { it.activityCode }
+
+        assertTrue(asked.contains(ActivityCatalog.BREAKFAST))
+        assertTrue(asked.contains(ActivityCatalog.LUNCH))
+        assertTrue("dinner hasn't happened yet", !asked.contains(ActivityCatalog.DINNER))
+    }
+
+    @Test
+    fun `an observed lunch beats the standing prompt for the same window`() {
+        val observed = ActivityCandidate(
+            ActivityCatalog.LUNCH, at(12, 52), at(13, 42), 0.86f, detectorId = "contextual-break"
+        )
+        val prompt = MealPromptDetector()
+            .detect(SignalWindow.EMPTY, context(elapsedMin = 15 * 60))
+            .single { it.activityCode == ActivityCatalog.LUNCH }
+
+        val resolved = CandidateResolver.resolve(listOf(prompt, observed))
+            .filter { it.activityCode == ActivityCatalog.LUNCH }
+
+        assertEquals(1, resolved.size)
+        assertEquals("contextual-break", resolved.single().detectorId)
+    }
+
+    @Test
+    fun `once you have confirmed your lunch time it asks about that time instead`() {
+        val profile = LearnedProfile(
+            activityCode = ActivityCatalog.LUNCH,
+            typicalStartMin = 13 * 60 + 20, startSpreadMin = 15,
+            typicalDurationMin = 35, durationSpreadMin = 10,
+            typicalPlaceId = null, observations = 6
+        )
+        val prompt = MealPromptDetector()
+            .detect(SignalWindow.EMPTY, context(mapOf(ActivityCatalog.LUNCH to profile), 15 * 60))
+            .single { it.activityCode == ActivityCatalog.LUNCH }
+
+        assertEquals(13 * 60 + 20, TimeUtils.minuteOfDay(java.time.Instant.ofEpochMilli(prompt.start)))
+        assertEquals(35, prompt.durationMin)
+        assertTrue(prompt.reasons().any { it.contains("usually") })
+    }
+
+    @Test
+    fun `a short call still lands on the timeline`() {
+        val w = window(
+            Signal(at(11, 0), SignalTypes.CALL_ANSWERED, value = CallDetector.CARRIER_CELLULAR, metadata = "Amma"),
+            Signal(at(11, 0) + 40_000L, SignalTypes.CALL_ENDED, value = CallDetector.CARRIER_CELLULAR)
+        )
+
+        val candidate = CallDetector().detect(w, context()).single()
+
+        assertEquals(ActivityCatalog.PHONE_CALL, candidate.activityCode)
+        assertTrue("the person you called is what makes it legible", candidate.reasons().any { it.contains("Amma") })
     }
 
     @Test

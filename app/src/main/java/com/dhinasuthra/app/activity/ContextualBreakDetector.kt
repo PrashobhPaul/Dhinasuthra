@@ -135,3 +135,79 @@ class ContextualBreakDetector(
         )
     }
 }
+
+/**
+ * Asks about meals the sensors said nothing about.
+ *
+ * [ContextualBreakDetector] can only name a break that something *observed* —
+ * a departure, a walk, a location change. On a day spent at home, or on a phone
+ * that was face-down on the table through lunch, none of that happens, and the
+ * result is an app that watched someone's entire afternoon and never once
+ * wondered whether they ate. That is a worse failure than a wrong guess: it
+ * makes the app look asleep.
+ *
+ * So once a meal window has been and gone with nothing else explaining it, this
+ * asks. It asks quietly — low confidence, phrased as a question, trivially
+ * dismissed — and it only asks once, because a dismissal is stored as the user's
+ * answer and outranks every future run.
+ *
+ * A real detection always wins over a prompt: both are ranked the same, and the
+ * observed one carries the higher confidence.
+ */
+class MealPromptDetector(
+    private val meals: List<MealWindow> = DEFAULT_MEALS
+) : ActivityDetector {
+
+    override val id = "meal-prompt"
+
+    /**
+     * [askAfterMin] is deliberately later than [toMin]: nobody wants to be asked
+     * whether they had lunch at ten past twelve.
+     */
+    data class MealWindow(
+        val activityCode: String,
+        val fromMin: Int,
+        val toMin: Int,
+        val askAfterMin: Int,
+        val typicalDurationMin: Int
+    )
+
+    override fun detect(window: SignalWindow, context: DetectionContext): List<ActivityCandidate> =
+        meals.mapNotNull { meal ->
+            if (context.elapsedMin < meal.askAfterMin) return@mapNotNull null
+
+            // What this person actually does beats the generic window.
+            val learned = context.profile(meal.activityCode)?.takeIf { it.isEstablished }
+            val start = learned?.typicalStartMin ?: ((meal.fromMin + meal.toMin) / 2)
+            val duration = learned?.typicalDurationMin?.takeIf { it > 0 } ?: meal.typicalDurationMin
+
+            val dayStart = context.dayStartMillis
+            val evidence = EvidenceBundle().add(
+                dayStart + start * 60_000L,
+                SignalTypes.STILL,
+                0.30f,
+                if (learned != null) "it's when you usually eat — ${learned.describe()}"
+                else "nothing else explained this part of your day"
+            )
+
+            ActivityCandidate(
+                activityCode = meal.activityCode,
+                start = dayStart + start * 60_000L,
+                end = dayStart + (start + duration) * 60_000L,
+                // Low on purpose. The UI hedges in proportion, so this reads as
+                // "Maybe lunch?" rather than as an assertion.
+                confidence = evidence.confidence(),
+                evidence = evidence.items,
+                status = ActivityStatus.INFERRED,
+                detectorId = id
+            )
+        }
+
+    companion object {
+        val DEFAULT_MEALS = listOf(
+            MealWindow(ActivityCatalog.BREAKFAST, 6 * 60, 10 * 60, 10 * 60 + 30, 25),
+            MealWindow(ActivityCatalog.LUNCH, 12 * 60, 14 * 60 + 30, 14 * 60 + 30, 40),
+            MealWindow(ActivityCatalog.DINNER, 19 * 60, 22 * 60, 22 * 60, 40)
+        )
+    }
+}

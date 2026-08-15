@@ -63,6 +63,10 @@ class ActivityIntelligence(
      */
     suspend fun refresh(epochDay: Long = TimeUtils.epochDay()): List<StoredActivity> =
         lock.withLock {
+            // Read-on-demand sources first — the call log has been accruing
+            // whether or not this app was running.
+            runCatching { repository.recordPolled(sources.pollAll(appContext)) }
+                .onFailure { DsLog.w("could not poll device signal sources") }
             runCatching { repository.reprocess(epochDay) }
                 .onFailure { DsLog.e("activity reprocess failed for day $epochDay", it) }
                 .getOrDefault(emptyList())

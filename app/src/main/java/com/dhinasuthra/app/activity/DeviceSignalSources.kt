@@ -32,9 +32,17 @@ interface DeviceSignalSource {
     fun isAvailable(context: Context): Boolean
 
     /** Start delivering into [sink]. Must be safe to call twice. */
-    fun start(context: Context, sink: SignalSink)
+    fun start(context: Context, sink: SignalSink) = Unit
 
-    fun stop(context: Context)
+    fun stop(context: Context) = Unit
+
+    /**
+     * Signals this source can hand over on demand, for sources that are read
+     * rather than subscribed to — a log the system keeps whether or not the app
+     * was running. Called before each recomputation. Must be idempotent: the
+     * same call read twice must not become two calls.
+     */
+    suspend fun poll(context: Context): List<Signal> = emptyList()
 }
 
 /** Where a source hands its observations. Implemented by the repository. */
@@ -113,8 +121,13 @@ class DeviceSignalSourceRegistry(private val sources: List<DeviceSignalSource>) 
         sources.forEach { runCatching { it.stop(context) } }
     }
 
+    /** Everything the readable sources can offer right now. */
+    suspend fun pollAll(context: Context): List<Signal> =
+        sources.filter { it.isAvailable(context) }
+            .flatMap { runCatching { it.poll(context) }.getOrDefault(emptyList()) }
+
     companion object {
-        fun default() = DeviceSignalSourceRegistry(listOf(PhoneStateSource()))
+        fun default() = DeviceSignalSourceRegistry(listOf(PhoneStateSource(), CallLogSource()))
     }
 }
 
@@ -197,5 +210,106 @@ object SignalBridge {
             lastOfType[e.type] = e
             signals
         }
+    }
+}
+
+/**
+ * Phone calls, read from the log Android already keeps (plan §31).
+ *
+ * Calls are the clearest signal a phone has about a person's day — "I rang my
+ * wife at eleven" is a fact, not an inference — and the app was silent about
+ * them. This reads the system call log, which means calls that happened while
+ * the app wasn't running are picked up too.
+ *
+ * Deliberate limits, so the app never claims more than it can see:
+ *
+ *  - **Opt-in.** Without `READ_CALL_LOG` granted, [isAvailable] is false and
+ *    nothing here runs or asks.
+ *  - **Connected calls only.** A call with zero duration was never answered, so
+ *    it becomes a `CALL_MISSED` marker and no activity — plan §31 is explicit
+ *    that a missed call must not produce a duration.
+ *  - **Cellular only, honestly labelled.** WhatsApp and Teams calls do not
+ *    appear in the system call log unless those apps register a connection
+ *    service, and most don't. Rather than mislabel a cellular call as WhatsApp,
+ *    everything from here says "phone".
+ *  - **Nothing leaves the device.** The contact name is carried so the timeline
+ *    can say who, and the app has no INTERNET permission to send it anywhere.
+ */
+class CallLogSource : DeviceSignalSource {
+
+    override val id = "call-log"
+
+    override fun isAvailable(context: Context): Boolean =
+        ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_CALL_LOG) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+
+    override suspend fun poll(context: Context): List<Signal> {
+        val since = System.currentTimeMillis() - LOOKBACK_MS
+        val out = mutableListOf<Signal>()
+        val projection = arrayOf(
+            android.provider.CallLog.Calls.TYPE,
+            android.provider.CallLog.Calls.DATE,
+            android.provider.CallLog.Calls.DURATION,
+            android.provider.CallLog.Calls.CACHED_NAME
+        )
+        context.contentResolver.query(
+            android.provider.CallLog.Calls.CONTENT_URI,
+            projection,
+            "${android.provider.CallLog.Calls.DATE} >= ?",
+            arrayOf(since.toString()),
+            "${android.provider.CallLog.Calls.DATE} ASC"
+        )?.use { c ->
+            while (c.moveToNext()) {
+                val type = c.getInt(0)
+                val startedAt = c.getLong(1)
+                val seconds = c.getLong(2)
+                val who = if (c.isNull(3)) null else c.getString(3)
+
+                val connected = seconds > 0 && (
+                    type == android.provider.CallLog.Calls.INCOMING_TYPE ||
+                        type == android.provider.CallLog.Calls.OUTGOING_TYPE
+                    )
+
+                if (!connected) {
+                    out.add(
+                        Signal(
+                            timestamp = startedAt,
+                            type = SignalTypes.CALL_MISSED,
+                            source = SignalSources.TELEPHONY,
+                            value = CallDetector.CARRIER_CELLULAR,
+                            metadata = who
+                        )
+                    )
+                    continue
+                }
+
+                // The log records when the call started and how long it was
+                // connected, so answer-to-end is exactly what gets stored.
+                out.add(
+                    Signal(
+                        timestamp = startedAt,
+                        type = SignalTypes.CALL_ANSWERED,
+                        source = SignalSources.TELEPHONY,
+                        value = CallDetector.CARRIER_CELLULAR,
+                        metadata = who
+                    )
+                )
+                out.add(
+                    Signal(
+                        timestamp = startedAt + seconds * 1000L,
+                        type = SignalTypes.CALL_ENDED,
+                        source = SignalSources.TELEPHONY,
+                        value = CallDetector.CARRIER_CELLULAR,
+                        metadata = who
+                    )
+                )
+            }
+        }
+        return out
+    }
+
+    private companion object {
+        /** Enough to backfill a fortnight the first time permission is granted. */
+        const val LOOKBACK_MS = 14L * 24 * 60 * 60 * 1000
     }
 }

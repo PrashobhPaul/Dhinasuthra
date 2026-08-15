@@ -185,7 +185,9 @@ object ActivityCatalog {
     const val WAKE = "WAKE"
     const val WORK = "WORK"
     const val MEETING = "MEETING"
+    const val BREAKFAST = "BREAKFAST"
     const val LUNCH = "LUNCH"
+    const val DINNER = "DINNER"
     const val TEA_BREAK = "TEA_BREAK"
     const val BREAK = "BREAK"
     const val INTERRUPTION = "INTERRUPTION"
@@ -201,7 +203,9 @@ object ActivityCatalog {
         WAKE to ActivityType.WAKE_TRANSITION,
         WORK to ActivityType.WORK,
         MEETING to ActivityType.MEETING,
+        BREAKFAST to ActivityType.BREAKFAST,
         LUNCH to ActivityType.LUNCH,
+        DINNER to ActivityType.DINNER,
         TEA_BREAK to ActivityType.TEA_BREAK,
         BREAK to ActivityType.TEA_BREAK,
         INTERRUPTION to ActivityType.INTERRUPTION,

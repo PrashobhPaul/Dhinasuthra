@@ -16,6 +16,14 @@
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <!-- Routine reminders (runtime on API 33+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Calls on your timeline. Optional and opt-in: the app asks only when you
+         turn "Phone calls" on in Settings, and reads nothing until you do. Used
+         solely to place answered calls on your own day; nothing is transmitted,
+         because the app holds no INTERNET permission. -->
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <!-- Contact names for those calls, so the timeline can say who you spoke to
+         rather than showing a bare number. Same opt-in, same local-only rule. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <!-- Reboot recovery: re-register geofences, reschedule reminders (§31) -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 

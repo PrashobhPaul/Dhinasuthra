@@ -136,7 +136,12 @@ class TvDetector(
  */
 class CallDetector(
     private val appActivity: Map<String, String> = DEFAULT_APP_ACTIVITY,
-    private val minCallMin: Int = 1
+    /**
+     * Zero, on purpose. A forty-second call to your mother happened, and an app
+     * that quietly drops it is wrong about the day in a way the user will notice.
+     * The only calls excluded are the ones that never connected.
+     */
+    private val minCallMin: Int = 0
 ) : ActivityDetector {
 
     override val id = "call"
@@ -152,6 +157,7 @@ class CallDetector(
                 SignalTypes.CALL_ENDED -> {
                     val start = answered ?: continue
                     answered = null
+                    if (signal.timestamp <= start.timestamp) continue
                     val minutes = ((signal.timestamp - start.timestamp) / 60_000L).toInt()
                     if (minutes < minCallMin) continue
 
@@ -159,11 +165,19 @@ class CallDetector(
                     val code = appActivity[app] ?: ActivityCatalog.PHONE_CALL
                     val via = app?.let { CARRIER_LABELS[it] }
 
+                    // The contact name, when Android had one cached. It never
+                    // leaves the device — the app holds no INTERNET permission.
+                    val who = start.metadata ?: signal.metadata
+                    val detail = when {
+                        who != null && via != null -> "a $via call with $who, ${lengthOf(minutes)}"
+                        who != null -> "a call with $who, ${lengthOf(minutes)}"
+                        via != null -> "a $via call you answered, ${lengthOf(minutes)}"
+                        else -> "a call you answered, ${lengthOf(minutes)}"
+                    }
                     val evidence = EvidenceBundle().add(
                         start.timestamp, SignalTypes.CALL_ANSWERED,
                         context.weights[WeightConfig.CALL_CONNECTED],
-                        if (via != null) "a $via call you answered lasted $minutes minutes"
-                        else "a call you answered lasted $minutes minutes"
+                        detail
                     )
 
                     out.add(
@@ -185,6 +199,9 @@ class CallDetector(
         }
         return out
     }
+
+    private fun lengthOf(minutes: Int): String =
+        if (minutes < 1) "under a minute" else "$minutes minutes"
 
     companion object {
         const val CARRIER_CELLULAR = "CELLULAR"

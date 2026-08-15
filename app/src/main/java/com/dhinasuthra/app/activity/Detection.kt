@@ -282,8 +282,17 @@ data class DetectionContext(
     val profiles: Map<String, LearnedProfile> = emptyMap(),
     val weights: WeightConfig = WeightConfig(),
     /** Confirmed activities already on the timeline for this day; never overwritten. */
-    val userTruth: List<ActivityCandidate> = emptyList()
+    val userTruth: List<ActivityCandidate> = emptyList(),
+    /**
+     * How much of this day has actually happened, in minutes. Today stops at
+     * *now*; a past day is complete. Detectors that ask about a window only ask
+     * once it has been and gone.
+     */
+    val elapsedMin: Int = 1440
 ) {
+    /** Local midnight of [epochDay], in millis. */
+    val dayStartMillis: Long get() = TimeUtils.dayStart(epochDay).toEpochMilli()
+
     fun minuteOfDay(timestamp: Long): Int = minuteOfDayOf(timestamp)
 
     fun anchor(id: String): Anchor? = anchors.firstOrNull { it.id == id }
@@ -359,6 +368,7 @@ class DetectorRegistry(val detectors: List<ActivityDetector>) {
                 WakeDetector(),
                 BoundaryDetector(),
                 ContextualBreakDetector(),
+                MealPromptDetector(),
                 TvDetector(),
                 CallDetector()
             )
