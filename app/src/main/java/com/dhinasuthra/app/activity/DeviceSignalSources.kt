@@ -127,7 +127,9 @@ class DeviceSignalSourceRegistry(private val sources: List<DeviceSignalSource>) 
             .flatMap { runCatching { it.poll(context) }.getOrDefault(emptyList()) }
 
     companion object {
-        fun default() = DeviceSignalSourceRegistry(listOf(PhoneStateSource(), CallLogSource()))
+        fun default() = DeviceSignalSourceRegistry(
+            listOf(PhoneStateSource(), CallLogSource(), UsageStatsSource())
+        )
     }
 }
 

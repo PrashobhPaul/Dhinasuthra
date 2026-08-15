@@ -539,6 +539,133 @@ class ActivityDetectionTest {
         assertTrue("the person you called is what makes it legible", candidate.reasons().any { it.contains("Amma") })
     }
 
+    // -----------------------------------------------------------------------
+    // Viewing time and app calls
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `a long stretch in a video app becomes watching time, named`() {
+        val w = window(
+            Signal(at(13, 0), SignalTypes.MEDIA_APP_ACTIVE, SignalSources.USAGE_STATS,
+                value = "38", metadata = "Netflix")
+        )
+
+        val candidate = TvDetector().detect(w, context()).single()
+
+        assertEquals(ActivityCatalog.WATCHING_TV, candidate.activityCode)
+        assertEquals(at(13, 0), candidate.start)
+        assertEquals(38, candidate.durationMin)
+        assertTrue(candidate.reasons().any { it.contains("Netflix") })
+    }
+
+    @Test
+    fun `a two-minute glance at a video app is not an evening's viewing`() {
+        val w = window(
+            Signal(at(13, 0), SignalTypes.MEDIA_APP_ACTIVE, SignalSources.USAGE_STATS, value = "2")
+        )
+
+        assertTrue(TvDetector().detect(w, context()).isEmpty())
+    }
+
+    @Test
+    fun `a remote app session read from usage access reads as watching TV`() {
+        // Exactly the two signals UsageStatsSource emits for one foreground run.
+        val w = window(
+            Signal(at(20, 0), SignalTypes.TV_REMOTE_INTERACTION, SignalSources.USAGE_STATS,
+                value = "com.google.android.apps.googletv", metadata = "Google TV"),
+            Signal(at(20, 42), SignalTypes.TV_NAVIGATION, SignalSources.USAGE_STATS,
+                value = "com.google.android.apps.googletv", metadata = "Google TV")
+        )
+
+        val candidate = TvDetector().detect(w, context()).single()
+
+        assertEquals(ActivityCatalog.WATCHING_TV, candidate.activityCode)
+        assertEquals(42, candidate.durationMin)
+    }
+
+    @Test
+    fun `overlapping calls on different apps keep their own start and end`() {
+        // A WhatsApp call taken during a cellular call: pairing by arrival order
+        // alone would hand one of them the other's end time.
+        val w = window(
+            Signal(at(10, 0), SignalTypes.CALL_ANSWERED, value = CallDetector.CARRIER_CELLULAR),
+            Signal(at(10, 5), SignalTypes.CALL_ANSWERED, value = CallDetector.CARRIER_WHATSAPP),
+            Signal(at(10, 12), SignalTypes.CALL_ENDED, value = CallDetector.CARRIER_WHATSAPP),
+            Signal(at(10, 30), SignalTypes.CALL_ENDED, value = CallDetector.CARRIER_CELLULAR)
+        )
+
+        val calls = CallDetector().detect(w, context()).sortedBy { it.start }
+
+        assertEquals(2, calls.size)
+        assertEquals(at(10, 0), calls[0].start)
+        assertEquals(30, calls[0].durationMin)
+        assertEquals(at(10, 5), calls[1].start)
+        assertEquals(7, calls[1].durationMin)
+    }
+
+    @Test
+    fun `a Teams call from a notification is an office meeting`() {
+        val w = window(
+            Signal(at(14, 1), SignalTypes.CALL_ANSWERED, SignalSources.NOTIFICATION,
+                value = CallDetector.CARRIER_TEAMS),
+            Signal(at(15, 2), SignalTypes.CALL_ENDED, SignalSources.NOTIFICATION,
+                value = CallDetector.CARRIER_TEAMS)
+        )
+
+        val candidate = CallDetector().detect(w, context()).single()
+
+        assertEquals(ActivityCatalog.MEETING, candidate.activityCode)
+        assertEquals(61, candidate.durationMin)
+    }
+
+    @Test
+    fun `a WhatsApp call that only ever rang creates nothing`() {
+        val w = window(
+            Signal(at(18, 10), SignalTypes.CALL_MISSED, SignalSources.NOTIFICATION,
+                value = CallDetector.CARRIER_WHATSAPP)
+        )
+
+        assertTrue(CallDetector().detect(w, context()).isEmpty())
+    }
+
+    @Test
+    fun `the call apps watched map to the right kind of activity`() {
+        val mapped = CallApps.WATCHED
+        assertEquals(CallDetector.CARRIER_WHATSAPP, mapped[CallApps.WHATSAPP])
+        assertEquals(CallDetector.CARRIER_TEAMS, mapped[CallApps.TEAMS])
+        assertEquals(
+            ActivityCatalog.MEETING,
+            CallDetector.DEFAULT_APP_ACTIVITY[CallDetector.CARRIER_TEAMS]
+        )
+        assertEquals(
+            ActivityCatalog.PHONE_CALL,
+            CallDetector.DEFAULT_APP_ACTIVITY[CallDetector.CARRIER_WHATSAPP]
+        )
+        assertNull("anything not a call app must be invisible", CallApps.carrierFor("com.android.chrome"))
+        assertNull(CallApps.carrierFor(null))
+    }
+
+    @Test
+    fun `only remote and video packages are recognised at all`() {
+        val apps = AppSignalMap.DEFAULT
+        assertEquals(AppSignalMap.Role.TV_REMOTE, apps.roleOf("com.google.android.apps.googletv"))
+        assertEquals(AppSignalMap.Role.MEDIA, apps.roleOf("com.netflix.mediaclient"))
+        assertNull("a banking app must not be readable", apps.roleOf("com.example.bank"))
+        assertNull("a browser must not be readable", apps.roleOf("com.android.chrome"))
+        assertNull("music is not television", apps.roleOf("com.spotify.music"))
+    }
+
+    @Test
+    fun `a wake marker does not suppress the breakfast question`() {
+        val wake = ActivityCandidate(ActivityCatalog.WAKE, at(8, 0), at(8, 0), 0.8f)
+        val breakfast = ActivityCandidate(ActivityCatalog.BREAKFAST, at(7, 50), at(8, 20), 0.3f)
+
+        val resolved = CandidateResolver.resolve(listOf(wake, breakfast)).map { it.activityCode }
+
+        assertTrue(resolved.contains(ActivityCatalog.WAKE))
+        assertTrue(resolved.contains(ActivityCatalog.BREAKFAST))
+    }
+
     @Test
     fun `an unknown activity code degrades to something readable`() {
         assertEquals("Lunch", ActivityCatalog.labelFor(ActivityCatalog.LUNCH))

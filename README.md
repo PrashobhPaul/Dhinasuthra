@@ -82,6 +82,16 @@ rather than pressing on. There is no code path that deletes or resets your data
 during an upgrade — and the upgrade is tested on every push against a
 four-month-old database, not just a fresh install.
 
+### 📺 It can see the parts of your day that aren't sensors
+
+Answered calls — including WhatsApp and Teams, which never reach the phone's
+call log — land on your timeline for exactly as long as you were connected.
+Missed calls don't, because nothing happened. An evening in front of the TV
+shows up too, named by what was playing.
+
+None of that is on by default. Each is a switch in Settings, each explains what
+it will and won't look at, and each stays completely dormant until you say yes.
+
 ### 🔒 Your day never leaves your phone
 
 Not *"we don't sell your data"*. The app holds **no internet permission at all** —
@@ -194,6 +204,7 @@ Activity @ Location — and `LensProjector` is the only way to build one.
 | Layer | What's inside |
 |---|---|
 | Sensing | Geofencing, Activity Recognition transitions, 15-minute context samples (screen / charging / last-known location), live screen + charger transitions, boot + timezone recovery |
+| Optional signals | Answered calls from the system log; WhatsApp and Teams calls via an ongoing-call notification, reading no text of any kind; TV and viewing time from usage access, restricted to a short list of remote and video apps. All opt-in, all off until switched on |
 | Context fusion | Debounced state machine → HOME / OFFICE / TRAVEL / KNOWN_PLACE / UNKNOWN_STAY segments in Room |
 | Reconciliation | Crossings raise *candidates*; dwell, continuity and context confirm them before anything is written to history |
 | Interpreters | Sleep, meals, work decomposition, commute, gap resolution — each pure Kotlin, each returning the evidence ledger that produced it |
@@ -256,9 +267,10 @@ permanent foreground service or other keep-alive hacks.
 - String extraction for Malayalam / Hindi / Telugu / Tamil / Kannada — copy still
   lives in Kotlin
 - Import / restore of exported data
-- Call and notification signals: the detectors and their tests exist, but wiring
-  a real source needs permissions that aren't on the reviewed allowlist yet
-- TV remote evidence depends on an explicit, opt-in integration
+- Internet-call detection infers "connected" from a running call timer in the
+  notification, which is a strong signal but still a heuristic
+- Only the remote and video apps on a built-in list are recognised for viewing
+  time; an unlisted app is invisible rather than mislabelled
 - Release signing: builds are currently debug-signed
 
 </details>

@@ -9,6 +9,10 @@ android.permission.POST_NOTIFICATIONS
 # Settings; never read otherwise. Cannot leave the device — no INTERNET.
 android.permission.READ_CALL_LOG
 android.permission.READ_CONTACTS
+# Optional special access, off by default, granted in Android Settings rather
+# than by a dialog: turns foreground app time into TV and viewing time. Only the
+# remote and video packages listed in AppSignalMap are ever read.
+android.permission.PACKAGE_USAGE_STATS
 android.permission.RECEIVE_BOOT_COMPLETED
 # Transitive, reviewed & documented (docs/play-store.md):
 # WorkManager scheduling holds partial wake locks during job execution.

@@ -120,6 +120,8 @@ object SignalTypes {
     const val TV_PLAYBACK = "TV_PLAYBACK"
     const val TV_VOLUME = "TV_VOLUME"
     const val TV_ON = "TV_ON"
+    /** A video or music app held the screen. `value` = minutes, `metadata` = its name. */
+    const val MEDIA_APP_ACTIVE = "MEDIA_APP_ACTIVE"
     const val BLUETOOTH_CONNECTED = "BLUETOOTH_CONNECTED"
     const val BLUETOOTH_DISCONNECTED = "BLUETOOTH_DISCONNECTED"
 
@@ -144,6 +146,7 @@ object SignalSources {
     const val TV_REMOTE = "TV_REMOTE"
     const val TELEPHONY = "TELEPHONY"
     const val NOTIFICATION = "NOTIFICATION"
+    const val USAGE_STATS = "USAGE_STATS"
     const val BLUETOOTH = "BLUETOOTH"
     const val SIMULATOR = "SIMULATOR"
 }
@@ -239,7 +242,7 @@ object ActivityCatalog {
  * same raw signals.
  */
 object InferenceEngine {
-    const val CURRENT = "2.0.0"
+    const val CURRENT = "2.1.0"
 
     /** True when [version] predates [CURRENT] and its output is worth recomputing. */
     fun isStale(version: String?): Boolean = version != null && version != CURRENT

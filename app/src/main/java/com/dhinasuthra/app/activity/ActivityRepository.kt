@@ -84,8 +84,9 @@ class ActivityRepository(
         if (signals.isEmpty()) return
         val from = signals.minOf { it.timestamp }
         val to = signals.maxOf { it.timestamp }
-        val seen = signalDao.between(from, to).mapTo(HashSet()) { it.timestamp to it.signalType }
-        recordAll(signals.filterNot { (it.timestamp to it.type) in seen })
+        val seen = signalDao.between(from, to)
+            .mapTo(HashSet()) { Triple(it.timestamp, it.signalType, it.value) }
+        recordAll(signals.filterNot { Triple(it.timestamp, it.type, it.value) in seen })
     }
 
     suspend fun signalsFor(epochDay: Long, lookBackHours: Int = 6): SignalWindow {
