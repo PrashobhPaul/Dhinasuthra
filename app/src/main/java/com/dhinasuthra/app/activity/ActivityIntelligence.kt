@@ -35,6 +35,9 @@ class ActivityIntelligence(
 
     private val lock = Mutex()
 
+    /** When the readable sources were last drained, so a 14-day sweep polls once. */
+    private var lastPolledAt = 0L
+
     /** Start listening. Idempotent — safe to call from `onCreate` and `onResume`. */
     fun start() {
         sources.startAll(appContext) { signal ->
@@ -63,6 +66,16 @@ class ActivityIntelligence(
      */
     suspend fun refresh(epochDay: Long = TimeUtils.epochDay()): List<StoredActivity> =
         lock.withLock {
+            // Read-on-demand sources first — the call log and usage stats have
+            // been accruing whether or not this app was running. Throttled, so
+            // recomputing a fortnight re-reads them once rather than fourteen
+            // times over.
+            val now = System.currentTimeMillis()
+            if (now - lastPolledAt > POLL_INTERVAL_MS) {
+                lastPolledAt = now
+                runCatching { repository.recordPolled(sources.pollAll(appContext)) }
+                    .onFailure { DsLog.w("could not poll device signal sources") }
+            }
             runCatching { repository.reprocess(epochDay) }
                 .onFailure { DsLog.e("activity reprocess failed for day $epochDay", it) }
                 .getOrDefault(emptyList())
@@ -134,4 +147,13 @@ class ActivityIntelligence(
     }
 
     suspend fun learnedProfiles(): Map<String, LearnedProfile> = repository.learnedProfiles()
+
+    /** Drain the readable sources on the next refresh, whatever the throttle says. */
+    fun invalidatePolling() {
+        lastPolledAt = 0L
+    }
+
+    private companion object {
+        const val POLL_INTERVAL_MS = 60_000L
+    }
 }

@@ -7,7 +7,10 @@ set -euo pipefail
 MERGED="app/build/intermediates/merged_manifests/debug/processDebugManifest/AndroidManifest.xml"
 [ -f "$MERGED" ] || MERGED="app/build/intermediates/merged_manifest/debug/AndroidManifest.xml"
 if [ ! -f "$MERGED" ]; then echo "Merged manifest not found — run assembleDebug first"; exit 2; fi
-ACTUAL=$(grep '<uses-permission' "$MERGED" | grep -o 'android\.permission\.[A-Z_]*' | sort -u)
+# Flatten first: the manifest merger is free to spread one element over several
+# lines, and a line-at-a-time grep would then miss the permission entirely —
+# silently passing something nobody reviewed.
+ACTUAL=$(tr '\n' ' ' < "$MERGED" | grep -o '<uses-permission[^>]*>' | grep -o 'android\.permission\.[A-Z_]*' | sort -u)
 ALLOW=$(grep -v '^#' scripts/permission-allowlist.txt | sort -u)
 EXTRA=$(comm -23 <(echo "$ACTUAL") <(echo "$ALLOW") || true)
 if [ -n "$EXTRA" ]; then

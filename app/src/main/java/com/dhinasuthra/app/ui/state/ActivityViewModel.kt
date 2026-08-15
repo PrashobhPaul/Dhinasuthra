@@ -6,9 +6,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.dhinasuthra.app.DhinaSuthraApp
+import com.dhinasuthra.app.activity.ActivityCatalog
 import com.dhinasuthra.app.activity.EvidenceItem
 import com.dhinasuthra.app.activity.StoredActivity
 import com.dhinasuthra.app.core.TimeUtils
+import com.dhinasuthra.app.intelligence.Correction
+import com.dhinasuthra.app.intelligence.LocationType
+import java.time.Instant
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -64,7 +68,11 @@ class ActivityViewModel(private val app: DhinaSuthraApp) : ViewModel() {
     fun confirm(activity: StoredActivity) {
         viewModelScope.launch {
             runCatching { intelligence.confirm(activity.id) }
-            _state.value = _state.value.copy(message = "${activity.label} confirmed")
+            // Confirming has to *show up*. Without this the user says "yes, that
+            // was lunch", and the timeline goes on saying Unclassified — which
+            // reads as the app ignoring them.
+            runCatching { writeToTimeline(activity) }
+            _state.value = _state.value.copy(message = "${activity.label} added to your day")
         }
     }
 
@@ -85,6 +93,15 @@ class ActivityViewModel(private val app: DhinaSuthraApp) : ViewModel() {
             runCatching {
                 intelligence.correct(activity.id, activityCode = activityCode, start = start, end = end)
             }
+            runCatching {
+                writeToTimeline(
+                    activity.copy(
+                        activityCode = activityCode ?: activity.activityCode,
+                        start = start ?: activity.start,
+                        end = end ?: activity.end
+                    )
+                )
+            }
             _state.value = _state.value.copy(message = "Updated — DhinaSuthra will remember that")
         }
     }
@@ -98,6 +115,45 @@ class ActivityViewModel(private val app: DhinaSuthraApp) : ViewModel() {
 
     fun clearMessage() {
         _state.value = _state.value.copy(message = null)
+    }
+
+    /**
+     * Mirror a confirmed activity into the day timeline.
+     *
+     * The two layers reason differently — one about signals and evidence, one
+     * about a day that tiles to 1440 minutes — but the user has exactly one day,
+     * and an answer given in one place has to be visible in the other.
+     *
+     * The place is inherited from whatever the timeline already believed about
+     * those minutes, so confirming lunch while at home stays at home rather than
+     * blanking a location the app already knew.
+     */
+    private suspend fun writeToTimeline(activity: StoredActivity) {
+        val startMin = TimeUtils.minuteOfDay(Instant.ofEpochMilli(activity.start))
+        val endMin = activity.end
+            ?.let { TimeUtils.minuteOfDay(Instant.ofEpochMilli(it)) }
+            ?.takeIf { it > startMin }
+            ?: (startMin + 1).coerceAtMost(1440)
+
+        val inherited = runCatching {
+            app.container.timeIntelligence.snapshot().day(activity.epochDay)
+                ?.episodes
+                ?.firstOrNull { it.startMin <= startMin && it.endMin > startMin }
+                ?.location
+        }.getOrNull() ?: LocationType.UNKNOWN
+
+        app.container.correctionStore.add(
+            Correction(
+                epochDay = activity.epochDay,
+                startMin = startMin,
+                endMin = endMin,
+                activity = ActivityCatalog.toActivityType(activity.activityCode),
+                location = inherited,
+                dayType = TimeUtils.dayType(activity.epochDay),
+                createdAt = System.currentTimeMillis()
+            )
+        )
+        app.container.timeIntelligence.invalidate()
     }
 }
 

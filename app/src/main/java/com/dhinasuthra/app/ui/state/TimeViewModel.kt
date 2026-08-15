@@ -61,14 +61,26 @@ class TimeViewModel(private val app: DhinaSuthraApp) : ViewModel() {
         return repo.day(epochDay, patterns)
     }
 
-    /** Spec §42 — a correction is stored, replayed as evidence, and rebuilds the day. */
-    fun correct(episode: TimeEpisode, activity: ActivityType, location: LocationType) {
+    /**
+     * Spec §42 — a correction is stored, replayed as evidence, and rebuilds the day.
+     *
+     * The times are parameters rather than being read off the episode, so
+     * "actually I woke at 11:32" is expressible: the user can move a boundary,
+     * not only relabel the block between two boundaries the engine chose.
+     */
+    fun correct(
+        episode: TimeEpisode,
+        activity: ActivityType,
+        location: LocationType,
+        startMin: Int = episode.startMin,
+        endMin: Int = episode.endMin
+    ) {
         viewModelScope.launch {
             app.container.correctionStore.add(
                 Correction(
                     epochDay = episode.epochDay,
-                    startMin = episode.startMin,
-                    endMin = episode.endMin,
+                    startMin = startMin,
+                    endMin = endMin,
                     activity = activity,
                     location = location,
                     dayType = TimeUtils.dayType(episode.epochDay),

@@ -16,6 +16,18 @@
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <!-- Routine reminders (runtime on API 33+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Calls on your timeline. Optional and opt-in: the app asks only when you
+         turn "Phone calls" on in Settings, and reads nothing until you do. Used
+         solely to place answered calls on your own day; nothing is transmitted,
+         because the app holds no INTERNET permission. -->
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <!-- Contact names for those calls, so the timeline can say who you spoke to
+         rather than showing a bare number. Same opt-in, same local-only rule. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- TV and viewing time. A special access, granted by the user in Android
+         Settings rather than by a dialog, and read only for the small list of
+         remote and video apps in AppSignalMap — every other app stays invisible. -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
     <!-- Reboot recovery: re-register geofences, reschedule reminders (§31) -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
@@ -64,6 +76,21 @@
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
             </intent-filter>
         </receiver>
+
+        <!-- WhatsApp and Teams calls, which never reach the system call log.
+             Dormant until the user grants notification access in Android
+             Settings. It reads no notification text of any kind: only which of
+             four call apps posted it, whether a call clock is running, and when.
+             Bound by the system alone via the signature-level permission below. -->
+        <service
+            android:name=".activity.CallNotificationListener"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
         <!-- Local reminder delivery (no cloud, no FCM — §9/§30) -->
         <receiver

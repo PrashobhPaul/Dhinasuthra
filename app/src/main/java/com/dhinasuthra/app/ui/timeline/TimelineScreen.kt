@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -28,6 +31,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -36,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -247,8 +253,8 @@ fun TimelineScreen() {
         CorrectionSheet(
             episode = episode,
             onDismiss = { correcting = null },
-            onSave = { activity, location ->
-                vm.correct(episode, activity, location)
+            onSave = { activity, location, startMin, endMin ->
+                vm.correct(episode, activity, location, startMin, endMin)
                 correcting = null
             }
         )
@@ -348,32 +354,82 @@ private fun StatusPill(status: EpisodeStatus) {
     }
 }
 
+/**
+ * The editing sheet.
+ *
+ * Two things went wrong in the first version and are fixed here. The content
+ * did not scroll, so on a normal phone the Save button sat below the bottom of
+ * the screen and the user simply could not reach it — every edit they made was
+ * unsaveable. And it only offered *what* you were doing, never *when*, so there
+ * was no way to say "I actually woke at 11:32".
+ *
+ * So: the body scrolls, the actions are pinned where they cannot escape, and
+ * the times are editable.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CorrectionSheet(
     episode: TimeEpisode,
     onDismiss: () -> Unit,
-    onSave: (ActivityType, LocationType) -> Unit
+    onSave: (ActivityType, LocationType, Int, Int) -> Unit
 ) {
     var activity by remember { mutableStateOf(episode.activity) }
     var location by remember { mutableStateOf(episode.location) }
+    var startMin by remember { mutableIntStateOf(episode.startMin) }
+    var endMin by remember { mutableIntStateOf(episode.endMin) }
+    var editingField by remember { mutableStateOf<TimeField?>(null) }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = DsTokens.Elevated) {
-        Column(
-            Modifier.padding(horizontal = DsTokens.ScreenPadding),
-            verticalArrangement = Arrangement.spacedBy(DsTokens.GapM)
-        ) {
+    // Always open fully. A half-height sheet is what hid the buttons before.
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    SheetScaffold(
+        sheetState = sheetState,
+        onDismiss = onDismiss,
+        confirmLabel = "Save",
+        confirmEnabled = endMin > startMin,
+        onConfirm = { onSave(activity, location, startMin, endMin) },
+        body = {
             Text("What were you actually doing?", style = MaterialTheme.typography.headlineSmall)
             Text(
-                "${episode.rangeLabel()} · ${episode.durationLabel()}. DhinaSuthra will remember this and weigh it when it sees a similar window again.",
+                "DhinaSuthra will remember this and weigh it when it sees a similar window again.",
                 style = MaterialTheme.typography.bodySmall
             )
+
+            Hairline()
+            Text("When?", style = MaterialTheme.typography.titleSmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                DsChip(
+                    label = "Started ${TimeUtils.formatMinuteOfDay(startMin)}",
+                    selected = startMin != episode.startMin,
+                    onClick = { editingField = TimeField.START }
+                )
+                DsChip(
+                    label = "Ended ${TimeUtils.formatMinuteOfDay(endMin)}",
+                    selected = endMin != episode.endMin,
+                    onClick = { editingField = TimeField.END }
+                )
+            }
+            if (endMin <= startMin) {
+                Text(
+                    "The end needs to come after the start.",
+                    style = MaterialTheme.typography.labelSmall.copy(color = DsTokens.Rose)
+                )
+            } else {
+                Text(
+                    TimeUtils.formatDurationMin(endMin - startMin),
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+
+            Hairline()
+            Text("What?", style = MaterialTheme.typography.titleSmall)
             SelectorGrid(
                 items = ActivityType.entries.filter { it != ActivityType.UNKNOWN },
                 selected = activity,
                 label = { "${it.icon} ${it.label}" },
                 onSelect = { activity = it }
             )
+
             Hairline()
             Text("Where?", style = MaterialTheme.typography.titleSmall)
             SelectorGrid(
@@ -382,16 +438,23 @@ private fun CorrectionSheet(
                 label = { "${it.icon} ${it.label}" },
                 onSelect = { location = it }
             )
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = onDismiss) { Text("Cancel", color = DsTokens.InkMuted) }
-                TextButton(onClick = { onSave(activity, location) }) {
-                    Text("Save correction", color = DsTokens.Gold)
-                }
-            }
-            Spacer(Modifier.height(DsTokens.GapL))
         }
+    )
+
+    editingField?.let { field ->
+        ClockSheet(
+            title = if (field == TimeField.START) "When did it start?" else "When did it end?",
+            initialMin = if (field == TimeField.START) startMin else endMin,
+            onDismiss = { editingField = null },
+            onPick = { picked ->
+                if (field == TimeField.START) startMin = picked else endMin = picked
+                editingField = null
+            }
+        )
     }
 }
+
+private enum class TimeField { START, END }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -402,49 +465,158 @@ private fun AddEpisodeSheet(
 ) {
     var activity by remember { mutableStateOf(ActivityType.PERSONAL) }
     var location by remember { mutableStateOf(LocationType.HOME) }
-    var durationMin by remember { mutableStateOf(60) }
-    val timeState = rememberTimePickerState(is24Hour = true)
+    var startMin by remember { mutableIntStateOf(TimeUtils.minuteOfDay(java.time.Instant.now())) }
+    var durationMin by remember { mutableIntStateOf(60) }
+    var pickingStart by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = DsTokens.Elevated) {
-        Column(
-            Modifier.padding(horizontal = DsTokens.ScreenPadding),
-            verticalArrangement = Arrangement.spacedBy(DsTokens.GapM)
-        ) {
+    SheetScaffold(
+        sheetState = sheetState,
+        onDismiss = onDismiss,
+        confirmLabel = "Add",
+        onConfirm = {
+            onSave(startMin, (startMin + durationMin).coerceAtMost(1440), activity, location)
+        },
+        body = {
             Text("Add what happened", style = MaterialTheme.typography.headlineSmall)
             Text(
-                "Manual episodes join the same 24-hour model as everything else, marked as yours.",
+                "Anything you add is yours — it outranks whatever DhinaSuthra worked out on its own.",
                 style = MaterialTheme.typography.bodySmall
             )
+
+            Hairline()
+            Text("When?", style = MaterialTheme.typography.titleSmall)
+            DsChip(
+                label = "Started ${TimeUtils.formatMinuteOfDay(startMin)}",
+                selected = true,
+                onClick = { pickingStart = true }
+            )
+            Text("How long?", style = MaterialTheme.typography.titleSmall)
+            SelectorGrid(
+                items = listOf(15, 30, 45, 60, 90, 120, 180, 240),
+                selected = durationMin,
+                label = { TimeUtils.formatDurationMin(it) },
+                onSelect = { durationMin = it }
+            )
+            Text(
+                "Ends ${TimeUtils.formatMinuteOfDay((startMin + durationMin).coerceAtMost(1440))}",
+                style = MaterialTheme.typography.labelSmall
+            )
+
+            Hairline()
+            Text("What?", style = MaterialTheme.typography.titleSmall)
             SelectorGrid(
                 items = ActivityType.entries.filter { it != ActivityType.UNKNOWN },
                 selected = activity,
                 label = { "${it.icon} ${it.label}" },
                 onSelect = { activity = it }
             )
-            TimePicker(state = timeState)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(15, 30, 45, 60, 90, 120).forEach { minutes ->
-                    DsChip(
-                        label = TimeUtils.formatDurationMin(minutes),
-                        selected = durationMin == minutes,
-                        onClick = { durationMin = minutes }
-                    )
-                }
-            }
+
+            Hairline()
+            Text("Where?", style = MaterialTheme.typography.titleSmall)
             SelectorGrid(
                 items = LocationType.entries.toList(),
                 selected = location,
                 label = { "${it.icon} ${it.label}" },
                 onSelect = { location = it }
             )
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        }
+    )
+
+    if (pickingStart) {
+        ClockSheet(
+            title = "When did it start?",
+            initialMin = startMin,
+            onDismiss = { pickingStart = false },
+            onPick = { startMin = it; pickingStart = false }
+        )
+    }
+}
+
+/**
+ * A bottom sheet whose body scrolls and whose actions do not.
+ *
+ * The action row lives outside the scrolling column, so however long the body
+ * gets — and it gets long, with sixteen activities and eight places — Save is
+ * always on screen. This is the fix for edits that could not be saved.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SheetScaffold(
+    sheetState: SheetState,
+    onDismiss: () -> Unit,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    confirmEnabled: Boolean = true,
+    body: @Composable ColumnScope.() -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = DsTokens.Elevated
+    ) {
+        Column(Modifier.fillMaxWidth()) {
+            Column(
+                Modifier
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = DsTokens.ScreenPadding)
+                    .padding(bottom = DsTokens.GapM),
+                verticalArrangement = Arrangement.spacedBy(DsTokens.GapM),
+                content = body
+            )
+            Hairline()
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .windowInsetsPadding(DsSafeArea.bottomAndSides)
+                    .padding(horizontal = DsTokens.ScreenPadding, vertical = 10.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 TextButton(onClick = onDismiss) { Text("Cancel", color = DsTokens.InkMuted) }
-                TextButton(onClick = {
-                    val start = timeState.hour * 60 + timeState.minute
-                    onSave(start, (start + durationMin).coerceAtMost(1440), activity, location)
-                }) { Text("Add", color = DsTokens.Gold) }
+                Spacer(Modifier.width(8.dp))
+                DsChip(
+                    label = confirmLabel,
+                    selected = confirmEnabled,
+                    onClick = { if (confirmEnabled) onConfirm() }
+                )
             }
-            Spacer(Modifier.height(DsTokens.GapL))
+        }
+    }
+}
+
+/** A plain clock picker in its own sheet, so it never crowds the form behind it. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ClockSheet(
+    title: String,
+    initialMin: Int,
+    onDismiss: () -> Unit,
+    onPick: (Int) -> Unit
+) {
+    val state = rememberTimePickerState(
+        initialHour = (initialMin / 60).coerceIn(0, 23),
+        initialMinute = initialMin % 60,
+        is24Hour = true
+    )
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = DsTokens.Elevated) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = DsTokens.ScreenPadding)
+                .padding(bottom = 34.dp),
+            verticalArrangement = Arrangement.spacedBy(DsTokens.GapM),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            TimePicker(state = state)
+            DsChip(
+                label = "Use this time",
+                selected = true,
+                onClick = { onPick(state.hour * 60 + state.minute) }
+            )
         }
     }
 }

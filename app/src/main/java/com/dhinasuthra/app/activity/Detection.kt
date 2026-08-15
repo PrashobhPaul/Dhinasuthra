@@ -136,6 +136,7 @@ class WeightConfig(private val overrides: Map<String, Float> = emptyMap()) {
         const val TV_STATIONARY = "tv.stationary"
         const val TV_PLAYBACK = "tv.playback_control"
         const val TV_NOT_PRESENT = "tv.no_interaction_since"
+        const val TV_MEDIA_APP = "tv.media_app_open"
 
         // -- calls -------------------------------------------------------------
         const val CALL_CONNECTED = "call.connected"
@@ -168,6 +169,7 @@ class WeightConfig(private val overrides: Map<String, Float> = emptyMap()) {
             TV_STATIONARY to 0.15f,
             TV_PLAYBACK to 0.25f,
             TV_NOT_PRESENT to -0.40f,
+            TV_MEDIA_APP to 0.45f,
 
             CALL_CONNECTED to 0.95f
         )
@@ -282,8 +284,17 @@ data class DetectionContext(
     val profiles: Map<String, LearnedProfile> = emptyMap(),
     val weights: WeightConfig = WeightConfig(),
     /** Confirmed activities already on the timeline for this day; never overwritten. */
-    val userTruth: List<ActivityCandidate> = emptyList()
+    val userTruth: List<ActivityCandidate> = emptyList(),
+    /**
+     * How much of this day has actually happened, in minutes. Today stops at
+     * *now*; a past day is complete. Detectors that ask about a window only ask
+     * once it has been and gone.
+     */
+    val elapsedMin: Int = 1440
 ) {
+    /** Local midnight of [epochDay], in millis. */
+    val dayStartMillis: Long get() = TimeUtils.dayStart(epochDay).toEpochMilli()
+
     fun minuteOfDay(timestamp: Long): Int = minuteOfDayOf(timestamp)
 
     fun anchor(id: String): Anchor? = anchors.firstOrNull { it.id == id }
@@ -359,6 +370,7 @@ class DetectorRegistry(val detectors: List<ActivityDetector>) {
                 WakeDetector(),
                 BoundaryDetector(),
                 ContextualBreakDetector(),
+                MealPromptDetector(),
                 TvDetector(),
                 CallDetector()
             )
@@ -403,14 +415,16 @@ object CandidateResolver {
     }
 
     /**
-     * Zero-length markers (a wake is a moment, not a span) only collide with
-     * something that genuinely contains them.
+     * Zero-length markers never collide with anything.
+     *
+     * A wake is a moment, not a stretch of time, so it occupies none and cannot
+     * displace what surrounds it — otherwise a confidently detected wake at 08:00
+     * would suppress the question about whether breakfast happened at 08:15.
      */
     private fun ActivityCandidate.overlaps(other: ActivityCandidate): Boolean {
         val myEnd = end ?: start
         val theirEnd = other.end ?: other.start
-        if (start == myEnd) return other.start < start && start < theirEnd
-        if (other.start == theirEnd) return start < other.start && other.start < myEnd
+        if (start == myEnd || other.start == theirEnd) return false
         return start < theirEnd && other.start < myEnd
     }
 }

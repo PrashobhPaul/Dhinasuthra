@@ -73,6 +73,22 @@ class ActivityRepository(
         )
     }
 
+    /**
+     * Ingest signals read from a system log rather than pushed to us.
+     *
+     * A log can be read many times over, so the same call must not become three
+     * calls after three refreshes. Existing rows in the same span are matched on
+     * timestamp and type, which is enough: two distinct events never share both.
+     */
+    suspend fun recordPolled(signals: List<Signal>) {
+        if (signals.isEmpty()) return
+        val from = signals.minOf { it.timestamp }
+        val to = signals.maxOf { it.timestamp }
+        val seen = signalDao.between(from, to)
+            .mapTo(HashSet()) { Triple(it.timestamp, it.signalType, it.value) }
+        recordAll(signals.filterNot { Triple(it.timestamp, it.type, it.value) in seen })
+    }
+
     suspend fun signalsFor(epochDay: Long, lookBackHours: Int = 6): SignalWindow {
         // Nights cross midnight, so a day's reasoning needs the tail of the one
         // before it. Six hours covers a wake window without dragging in yesterday.
@@ -116,8 +132,10 @@ class ActivityRepository(
      * only do so where the user hasn't already spoken.
      */
     suspend fun reprocess(epochDay: Long): List<StoredActivity> {
+        // No early return on an empty signal window. A phone that saw nothing
+        // all afternoon is exactly the case where the app should still be
+        // asking whether you ate — bailing here is what made it look asleep.
         val window = signalsFor(epochDay)
-        if (window.isEmpty) return eventsFor(epochDay)
 
         val existing = eventDao.forDay(epochDay)
         val userTruth = existing.filter { ActivityStatus.of(it.status).isUserTruth }
@@ -127,7 +145,8 @@ class ActivityRepository(
             anchors = anchors(),
             profiles = learnedProfiles(),
             weights = weights,
-            userTruth = userTruth.map { it.toCandidate() }
+            userTruth = userTruth.map { it.toCandidate() },
+            elapsedMin = elapsedMinutesOf(epochDay)
         )
 
         // Detectors are independent, so two of them describing the same gap is
@@ -320,6 +339,16 @@ class ActivityRepository(
             }
         }
         return LearningEngine.learn(occurrences)
+    }
+
+    /** How much of [epochDay] has actually happened. Today stops at now. */
+    private fun elapsedMinutesOf(epochDay: Long): Int {
+        val today = TimeUtils.epochDay()
+        return when {
+            epochDay < today -> 1440
+            epochDay > today -> 0
+            else -> TimeUtils.minuteOfDay(java.time.Instant.ofEpochMilli(now()))
+        }
     }
 
     private suspend fun anchors(): List<Anchor> {

@@ -37,6 +37,13 @@ import com.dhinasuthra.app.DhinaSuthraApp
 import com.dhinasuthra.app.core.model.NotificationPrivacy
 import com.dhinasuthra.app.simulate.DaySimulator
 import com.dhinasuthra.app.ui.foundation.CardBody
+import android.Manifest
+import android.content.Intent
+import android.provider.Settings
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import com.dhinasuthra.app.activity.CallNotificationListener
+import com.dhinasuthra.app.activity.UsageStatsSource
 import com.dhinasuthra.app.core.database.DatabaseGuardian
 import com.dhinasuthra.app.core.database.DatabaseStatus
 import com.dhinasuthra.app.ui.foundation.DsScreen
@@ -82,6 +89,52 @@ private fun SettingsRoot(onOpen: (SettingsPage) -> Unit, onBack: () -> Unit) {
     var name by remember { mutableStateOf(settings.userName) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var statusLine by remember { mutableStateOf<String?>(null) }
+    var callsOn by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_CALL_LOG) ==
+                PackageManager.PERMISSION_GRANTED
+        )
+    }
+    // Special accesses are granted on Android's own screens, not by a dialog, so
+    // the switches re-read the real state when the user comes back rather than
+    // assuming the trip succeeded.
+    var usageOn by remember { mutableStateOf(UsageStatsSource.hasUsageAccess(ctx)) }
+    var appCallsOn by remember { mutableStateOf(CallNotificationListener.isEnabled(ctx)) }
+
+    val usageAccess = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        usageOn = UsageStatsSource.hasUsageAccess(ctx)
+        app.container.activityIntelligence.invalidatePolling()
+        if (usageOn) {
+            scope.launch {
+                app.container.activityIntelligence.refreshRecent(7)
+                statusLine = "Your viewing time is on your timeline."
+            }
+        }
+    }
+    val notificationAccess = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        appCallsOn = CallNotificationListener.isEnabled(ctx)
+        // Nothing to backfill: notifications are only visible as they happen,
+        // so this starts counting from now rather than pretending otherwise.
+        statusLine = if (appCallsOn) "WhatsApp and Teams calls will appear from now on." else null
+    }
+
+    val callPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { granted ->
+        callsOn = granted[Manifest.permission.READ_CALL_LOG] == true
+        if (callsOn) {
+            // Backfill immediately, so turning it on shows a fortnight of calls
+            // rather than an empty promise.
+            scope.launch {
+                app.container.activityIntelligence.refreshRecent(14)
+                statusLine = "Your calls are on your timeline."
+            }
+        }
+    }
 
     val rules by app.container.db.reminderDao().observeRules().collectAsState(initial = emptyList())
 
@@ -322,6 +375,130 @@ private fun SettingsRoot(onOpen: (SettingsPage) -> Unit, onBack: () -> Unit) {
         // trust an app with years of their life should be able to see that the
         // app takes a copy before it changes anything, and that the copy is
         // still there.
+        // The one thing the app cannot work out on its own: who you spoke to.
+        // Off until asked for, and honest about what it can and cannot see.
+        item { SectionTitle("Phone calls") }
+        item {
+            Reveal(6) {
+                GlassCard(Modifier.fillMaxWidth(), tint = DsTokens.Cyan, interactive = false) {
+                    CardBody {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Put your calls on your day", style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    if (callsOn)
+                                        "Answered calls appear on your timeline with who you spoke to. Calls you missed are left off."
+                                    else
+                                        "DhinaSuthra can show the calls you actually took, and who they were with. It reads nothing until you say yes.",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            Switch(
+                                checked = callsOn,
+                                onCheckedChange = { wanted ->
+                                    if (wanted) {
+                                        callPermission.launch(
+                                            arrayOf(
+                                                Manifest.permission.READ_CALL_LOG,
+                                                Manifest.permission.READ_CONTACTS
+                                            )
+                                        )
+                                    } else {
+                                        callsOn = false
+                                        statusLine =
+                                            "Turn it off fully in Android Settings › Apps › DhinaSuthra › Permissions."
+                                    }
+                                }
+                            )
+                        }
+                        Text(
+                            "Video and internet calls from other apps aren't visible to any app but their own, so those won't appear. Nothing here can leave your phone.",
+                            style = MaterialTheme.typography.labelSmall.copy(color = DsTokens.InkFaint)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Two things a phone can only know if the user opens a door for it.
+        // Both are off, both are described in terms of what appears on the
+        // timeline rather than what is technically read.
+        item { SectionTitle("What you were watching") }
+        item {
+            Reveal(6) {
+                GlassCard(Modifier.fillMaxWidth(), tint = DsTokens.Violet, interactive = false) {
+                    CardBody {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("TV and viewing time", style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    if (usageOn)
+                                        "Your evenings in front of the TV show up on your timeline, named by what was playing."
+                                    else
+                                        "DhinaSuthra can see when you were using a TV remote or watching something, and put it on your day.",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            Switch(
+                                checked = usageOn,
+                                onCheckedChange = {
+                                    runCatching {
+                                        usageAccess.launch(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                                    }.onFailure {
+                                        statusLine = "Open Settings › Apps › Special access › Usage access."
+                                    }
+                                },
+                                colors = SwitchDefaults.colors(checkedTrackColor = DsTokens.Gold)
+                            )
+                        }
+                        Text(
+                            "Android grants this on its own screen. Only remote and video apps are ever read — everything else you open stays invisible to DhinaSuthra, and none of it can leave the phone.",
+                            style = MaterialTheme.typography.labelSmall.copy(color = DsTokens.InkFaint)
+                        )
+                    }
+                }
+            }
+        }
+
+        item { SectionTitle("WhatsApp and Teams calls") }
+        item {
+            Reveal(6) {
+                GlassCard(Modifier.fillMaxWidth(), tint = DsTokens.Cyan, interactive = false) {
+                    CardBody {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Calls from other apps", style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    if (appCallsOn)
+                                        "WhatsApp calls appear as calls, and Teams calls as meetings, for as long as you were actually connected."
+                                    else
+                                        "These never reach the phone's call log, so DhinaSuthra needs notification access to notice them at all.",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            Switch(
+                                checked = appCallsOn,
+                                onCheckedChange = {
+                                    runCatching {
+                                        notificationAccess.launch(
+                                            Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                                        )
+                                    }.onFailure {
+                                        statusLine = "Open Settings › Notifications › Notification access."
+                                    }
+                                },
+                                colors = SwitchDefaults.colors(checkedTrackColor = DsTokens.Gold)
+                            )
+                        }
+                        Text(
+                            "It reads no notification text of any kind — not the sender, not a word of a message. Only which of four call apps rang, whether the call clock was running, and when. Calls you didn't answer are left off your day.",
+                            style = MaterialTheme.typography.labelSmall.copy(color = DsTokens.InkFaint)
+                        )
+                    }
+                }
+            }
+        }
+
         item { SectionTitle("Updates") }
         item {
             Reveal(6) {

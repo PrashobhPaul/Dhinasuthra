@@ -35,11 +35,13 @@ class TvDetector(
     )
 
     override fun detect(window: SignalWindow, context: DetectionContext): List<ActivityCandidate> {
-        val interactions = window.signals.filter { it.type in remoteSignals }
-        if (interactions.isEmpty()) return emptyList()
-
         val weights = context.weights
         val out = mutableListOf<ActivityCandidate>()
+        out += mediaSessions(window, context)
+
+        val interactions = window.signals.filter { it.type in remoteSignals }
+        if (interactions.isEmpty()) return out
+
         val gapMs = sessionGapMin * 60_000L
 
         // Group interactions into sessions separated by long lulls.
@@ -117,6 +119,52 @@ class TvDetector(
         }
         return out
     }
+
+    /**
+     * A video app that held the screen for a while.
+     *
+     * Distinct from remote use — this is something playing, wherever it was
+     * playing — but it lands on the timeline the same way, because from the
+     * user's side both are "I was watching something". The evidence names the
+     * app so they can tell at a glance which it was.
+     */
+    private fun mediaSessions(
+        window: SignalWindow,
+        context: DetectionContext
+    ): List<ActivityCandidate> =
+        window.ofType(SignalTypes.MEDIA_APP_ACTIVE).mapNotNull { signal ->
+            val minutes = signal.minutes ?: return@mapNotNull null
+            if (minutes < minSessionMin) return@mapNotNull null
+            val end = signal.timestamp + minutes * 60_000L
+            val app = signal.metadata
+
+            val evidence = EvidenceBundle().add(
+                signal.timestamp, SignalTypes.MEDIA_APP_ACTIVE,
+                context.weights[WeightConfig.TV_MEDIA_APP],
+                if (app != null) "you had $app open for $minutes minutes"
+                else "something was playing for $minutes minutes"
+            )
+            val moved = window.ofTypeBetween(
+                setOf(SignalTypes.WALKING, SignalTypes.RUNNING, SignalTypes.IN_VEHICLE),
+                signal.timestamp, end
+            )
+            if (moved.isEmpty()) {
+                evidence.add(
+                    signal.timestamp, SignalTypes.STILL,
+                    context.weights[WeightConfig.TV_STATIONARY], "you stayed put"
+                )
+            }
+
+            ActivityCandidate(
+                activityCode = ActivityCatalog.WATCHING_TV,
+                start = signal.timestamp,
+                end = end,
+                confidence = evidence.confidence(),
+                evidence = evidence.items,
+                status = ActivityStatus.INFERRED,
+                detectorId = id
+            )
+        }
 }
 
 /**
@@ -136,22 +184,31 @@ class TvDetector(
  */
 class CallDetector(
     private val appActivity: Map<String, String> = DEFAULT_APP_ACTIVITY,
-    private val minCallMin: Int = 1
+    /**
+     * Zero, on purpose. A forty-second call to your mother happened, and an app
+     * that quietly drops it is wrong about the day in a way the user will notice.
+     * The only calls excluded are the ones that never connected.
+     */
+    private val minCallMin: Int = 0
 ) : ActivityDetector {
 
     override val id = "call"
 
     override fun detect(window: SignalWindow, context: DetectionContext): List<ActivityCandidate> {
         val out = mutableListOf<ActivityCandidate>()
-        var answered: Signal? = null
+        // Keyed by which app carried the call: a cellular call and a WhatsApp
+        // call can overlap, and pairing them by arrival order alone would give
+        // one of them the other's end time.
+        val answered = HashMap<String, Signal>()
 
         for (signal in window.signals) {
+            val carrier = signal.value ?: UNKNOWN_CARRIER
             when (signal.type) {
-                SignalTypes.CALL_ANSWERED -> answered = signal
-                SignalTypes.CALL_MISSED -> answered = null    // never connected: nothing to record
+                SignalTypes.CALL_ANSWERED -> answered[carrier] = signal
+                SignalTypes.CALL_MISSED -> answered.remove(carrier)  // never connected
                 SignalTypes.CALL_ENDED -> {
-                    val start = answered ?: continue
-                    answered = null
+                    val start = answered.remove(carrier) ?: continue
+                    if (signal.timestamp <= start.timestamp) continue
                     val minutes = ((signal.timestamp - start.timestamp) / 60_000L).toInt()
                     if (minutes < minCallMin) continue
 
@@ -159,11 +216,19 @@ class CallDetector(
                     val code = appActivity[app] ?: ActivityCatalog.PHONE_CALL
                     val via = app?.let { CARRIER_LABELS[it] }
 
+                    // The contact name, when Android had one cached. It never
+                    // leaves the device — the app holds no INTERNET permission.
+                    val who = start.metadata ?: signal.metadata
+                    val detail = when {
+                        who != null && via != null -> "a $via call with $who, ${lengthOf(minutes)}"
+                        who != null -> "a call with $who, ${lengthOf(minutes)}"
+                        via != null -> "a $via call you answered, ${lengthOf(minutes)}"
+                        else -> "a call you answered, ${lengthOf(minutes)}"
+                    }
                     val evidence = EvidenceBundle().add(
                         start.timestamp, SignalTypes.CALL_ANSWERED,
                         context.weights[WeightConfig.CALL_CONNECTED],
-                        if (via != null) "a $via call you answered lasted $minutes minutes"
-                        else "a call you answered lasted $minutes minutes"
+                        detail
                     )
 
                     out.add(
@@ -186,7 +251,12 @@ class CallDetector(
         return out
     }
 
+    private fun lengthOf(minutes: Int): String =
+        if (minutes < 1) "under a minute" else "$minutes minutes"
+
     companion object {
+        private const val UNKNOWN_CARRIER = "UNKNOWN"
+
         const val CARRIER_CELLULAR = "CELLULAR"
         const val CARRIER_WHATSAPP = "WHATSAPP"
         const val CARRIER_TEAMS = "TEAMS"
